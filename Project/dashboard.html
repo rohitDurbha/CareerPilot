@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CareerPilot — Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#0b1020; --card:#121937; --muted:#9fb2ff; --text:#eaf0ff; --accent:#6aa7ff; }
+    body { margin: 0; background: linear-gradient(120deg,#0b1020,#10163a); font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial; color: var(--text);}
+    .wrap { min-height: 100vh; padding: 30px 0; display:flex; flex-direction:column; align-items: center;}
+    .header { text-align: center; margin-bottom: 30px; }
+    h1 { font-weight: 700; margin: 0 0 12px; }
+    .preferences { background: var(--card); border: 1px solid #20306b; border-radius: 12px; padding: 18px 24px; margin: 20px 0; box-shadow: 0 8px 30px rgba(0,0,0,.18); }
+    .pref-item { display: inline-block; margin: 0 15px; }
+    .pref-label { color: var(--muted); font-size: 0.9em; display: block; }
+    .pref-value { color: var(--accent); font-weight: 600; font-size: 1.1em; }
+    .loading { text-align: center; color: var(--muted); font-size: 1.1em; margin: 50px 0; }
+    .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #7fb2ff; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 10px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .tablewrap { width: min(1100px, 96vw); margin: 30px auto; }
+    table { border-collapse: separate; border-spacing: 0 10px; width: 100%; }
+    th, td { text-align: left; padding: 16px 18px; border: none;}
+    th { color: #bfc9ff; font-weight: 600; background: #141a38; border-radius: 8px;}
+    tr { background: var(--card); border-radius: 12px; box-shadow:0 8px 30px rgba(0,0,0,.18); }
+    tr:hover { background: #1d2550; }
+    td.score { font-weight: 700; font-size: 1.1em;}
+    .score-high { color: #7fff9a; }
+    .score-medium { color: #ffed76; }
+    .score-low { color: #ff9a9a; }
+    .apply-btn {
+      background: var(--accent);
+      color: #081135;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .17s;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      font-size: 1em;
+      min-width: 90px;
+      justify-content: center;
+      gap: 6px;
+    }
+    .apply-btn:hover { background: #4594fc; }
+    .train-btn {
+      background: #eee8f7;
+      color: #4452b0;
+      border: 1px solid #6aa7ff;
+      min-width: 110px;
+    }
+    .train-btn:hover {
+      background: #d1eaff;
+      color: #081135;
+    }
+    .action-btns {
+      display: flex;
+      gap: 20px; /* Extra gap between Apply and Train */
+      align-items: center;
+      justify-content: flex-start;
+    }
+    .subtitle { margin-top:10px; color: var(--muted); font-size: 1rem; font-weight: 500;}
+    .error { background: #2d1b1b; border: 1px solid #6b2020; color: #ffaaaa; padding: 15px; border-radius: 8px; margin: 20px; text-align: center; }
+    .no-jobs { text-align: center; color: var(--muted); margin: 50px 0; font-size: 1.1em; }
+    td { word-break: break-word;}
+    .desc-short, .desc-full { color: #eee; }
+    .toggle-desc { background: none; border: none; color: #6aa7ff; cursor: pointer; font-size: 1em; padding: 0; margin-top: 4px;}
+    .toggle-desc:hover {text-decoration: underline;}
+    footer {margin-top:30px;color:#8fa2ff;font-size:.88rem;text-align:center;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <h1>💼 Your Job Matches</h1>
+      <div class="preferences">
+        <div class="pref-item">
+          <span class="pref-label">Looking for:</span>
+          <span class="pref-value" id="user-keyword">Loading...</span>
+        </div>
+        <div class="pref-item">
+          <span class="pref-label">Location:</span>
+          <span class="pref-value" id="user-location">Loading...</span>
+        </div>
+      </div>
+      <div class="subtitle">Here are jobs tailored to your preferences and resume:</div>
+    </div>
+    
+    <div id="loading" class="loading">
+      <span class="spinner"></span>
+      Fetching your personalized job matches...
+    </div>
+    
+    <div id="error" class="error" style="display: none;">
+      <strong>Error:</strong> Unable to load job matches. Please try again later.
+    </div>
+    
+    <div class="tablewrap" id="table-container" style="display: none;">
+      <table id="dash-table">
+        <thead>
+          <tr>
+            <th>Job Title</th>
+            <th>Company</th>
+            <th>Location</th>
+            <th>Match Score</th>
+            <th>Description</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="job-list">
+          <!-- Jobs will be inserted here -->
+        </tbody>
+      </table>
+    </div>
+    
+    <div id="no-jobs" class="no-jobs" style="display: none;">
+      <h3>🔍 No matching jobs found</h3>
+      <p>We're still processing your request or no jobs match your criteria yet.</p>
+      <p>Try refreshing in a few minutes or adjust your search preferences.</p>
+    </div>
+    
+    <footer>
+      CareerPilot Dashboard — Connecting you to your next opportunity<br>
+      <span style="color:#7a90b0;">Powered by Flask, MongoDB, and Activepieces</span>
+    </footer>
+  </div>
+  
+  <script>
+    function getUserPreferences() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return {
+        keyword: urlParams.get('keyword') || localStorage.getItem('cp_role') || 'Software Engineer',
+        location: urlParams.get('location') || localStorage.getItem('cp_location') || 'San Jose, CA'
+      };
+    }
+    function displayPreferences() {
+      const prefs = getUserPreferences();
+      document.getElementById('user-keyword').textContent = prefs.keyword;
+      document.getElementById('user-location').textContent = prefs.location;
+    }
+    function getScoreClass(score) {
+      if (score >= 90) return 'score-high';
+      if (score >= 70) return 'score-medium';
+      return 'score-low';
+    }
+    function truncateText(text, maxLength) {
+      if (!text) return '';
+      return text.length > maxLength
+        ? text.slice(0, maxLength).replace(/\s+\S*$/, '') + '...'
+        : text;
+    }
+    function renderJobs(jobs) {
+      const container = document.getElementById("job-list");
+      container.innerHTML = "";
+      if (!jobs || jobs.length === 0) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('no-jobs').style.display = 'block';
+        return;
+      }
+      jobs.sort((a, b) => (b.resumeScore || b.score || 0) - (a.resumeScore || a.score || 0));
+      jobs.forEach(job => {
+        const score = job.resumeScore || job.score || Math.floor(Math.random() * 30 + 70);
+        const scoreClass = getScoreClass(score);
+        const fullDesc = job.jobDescription || job.job_description || 'Job description not available';
+        const shortDesc = truncateText(fullDesc, 110);
+        const row = `<tr>
+          <td><strong>${job.jobTitle || job.job_title || 'Job Title'}</strong></td>
+          <td>${job.companyName || job.company_name || 'Company'}</td>
+          <td>${job.location || job.job_location || 'Location'}</td>
+          <td class="score ${scoreClass}">${score}%</td>
+          <td>
+            <span class="desc-short">${shortDesc}</span>
+            <span class="desc-full" style="display:none;">${fullDesc}</span>
+            <button class="toggle-desc apply-btn" style="margin-left:8px;background:none;color:#6aa7ff;padding:0;">&#8942; Show more</button>
+          </td>
+          <td style="min-width:200px;">
+            <div class="action-btns">
+              <a href="${job.companyUrl || job.url || '#'}" class="apply-btn" target="_blank" title="Apply Now">
+                <span class="btn-icon">&#128188;</span> Apply
+              </a>
+              <button class="apply-btn train-btn" style="margin-left:10px; min-width:110px;"
+                      data-description="${encodeURIComponent(fullDesc)}"
+                      data-title="${encodeURIComponent(job.jobTitle || job.job_title || 'Job Title')}">
+                <span class="btn-icon">&#9881;</span> Train
+              </button>
+            </div>
+          </td>
+        </tr>`;
+        container.insertAdjacentHTML("beforeend", row);
+      });
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('table-container').style.display = 'block';
+    }
+    async function fetchJobs() {
+      try {
+        const response = await fetch('http://localhost:5001/latest_jobs', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const jobs = data.jobs || data.results || data || [];
+          renderJobs(jobs);
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+      } catch (error) {
+        console.error('Error fetching jobs:', error);
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').style.display = 'block';
+        setTimeout(() => {
+          console.log('Falling back to mock data...');
+          renderMockJobs();
+        }, 2000);
+      }
+    }
+    function renderMockJobs() {
+      const prefs = getUserPreferences();
+      const mockJobs = [
+        {
+          jobTitle: prefs.keyword,
+          companyName: "TechCorp Solutions",
+          location: prefs.location,
+          resumeScore: 96,
+          jobDescription: "Perfect match for your skills in modern tech stack development.",
+          companyUrl: "https://example.com/apply/1"
+        },
+        {
+          jobTitle: `Senior ${prefs.keyword}`,
+          companyName: "InnovateLabs",
+          location: prefs.location,
+          resumeScore: 92,
+          jobDescription: "Lead development projects using cutting-edge technologies.",
+          companyUrl: "https://example.com/apply/2"
+        },
+        {
+          jobTitle: `${prefs.keyword} II`,
+          companyName: "DataFlow Inc",
+          location: "Remote",
+          resumeScore: 87,
+          jobDescription: "Remote opportunity with flexible hours and great benefits.",
+          companyUrl: "https://example.com/apply/3"
+        }
+      ];
+      document.getElementById('error').style.display = 'none';
+      renderJobs(mockJobs);
+    }
+    function triggerAgents(jobDescription, jobTitle) {
+      fetch('http://localhost:5001/run_agents', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          job_title: decodeURIComponent(jobTitle) || '',
+          job_description: decodeURIComponent(jobDescription) || ''
+        })
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Run agents response:', data);
+      })
+      .catch(error => {
+        console.error('Error calling run_agents:', error);
+      });
+    }
+    document.addEventListener('click', function(event) {
+      if (event.target.classList.contains('toggle-desc')) {
+        const td = event.target.closest('td');
+        const shortDesc = td.querySelector('.desc-short');
+        const fullDesc = td.querySelector('.desc-full');
+        if (fullDesc.style.display === 'none') {
+          fullDesc.style.display = '';
+          shortDesc.style.display = 'none';
+          event.target.innerHTML = '&#10005; Show less'; // “X”
+        } else {
+          fullDesc.style.display = 'none';
+          shortDesc.style.display = '';
+          event.target.innerHTML = '&#8942; Show more'; // ellipsis
+        }
+      }
+      if (event.target.classList.contains('train-btn')) {
+        const jobDescription = event.target.getAttribute('data-description');
+        const jobTitle = event.target.getAttribute('data-title');
+        window.open('http://localhost:3000/rooms/test-room', '_blank');
+        triggerAgents(jobDescription, jobTitle);
+      }
+    });
+    document.addEventListener('DOMContentLoaded', () => {
+      displayPreferences();
+      fetchJobs();
+    });
+  </script>
+</body>
+</html>

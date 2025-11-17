@@ -1,0 +1,58 @@
+=== Interview Session Started ===
+[2025-11-17 05:33:53] AI/User transcribed: Hello
+[2025-11-17 05:33:53] AI/User transcribed: !
+[2025-11-17 05:33:53] AI/User transcribed: Thank
+[2025-11-17 05:33:53] AI/User transcribed: you
+[2025-11-17 05:33:53] AI/User transcribed: for
+[2025-11-17 05:33:53] AI/User transcribed: joining
+[2025-11-17 05:33:53] AI/User transcribed: the
+[2025-11-17 05:33:53] AI/User transcribed: interview
+[2025-11-17 05:33:53] AI/User transcribed: today
+[2025-11-17 05:33:53] AI/User transcribed: .
+[2025-11-17 05:33:53] AI/User transcribed: To
+[2025-11-17 05:33:53] AI/User transcribed: get
+[2025-11-17 05:33:54] AI/User transcribed: started
+[2025-11-17 05:33:54] AI/User transcribed: ,
+[2025-11-17 05:33:54] AI/User transcribed: could
+[2025-11-17 05:33:54] AI/User transcribed: you
+[2025-11-17 05:33:54] AI/User transcribed: please
+[2025-11-17 05:33:54] AI/User transcribed: tell
+[2025-11-17 05:33:54] AI/User transcribed: me
+[2025-11-17 05:33:54] AI/User transcribed: your
+[2025-11-17 05:33:54] AI/User transcribed: name
+[2025-11-17 05:33:54] AI/User transcribed: and
+[2025-11-17 05:33:54] AI/User transcribed: a
+[2025-11-17 05:33:54] AI/User transcribed: little
+[2025-11-17 05:33:54] AI/User transcribed: bit
+[2025-11-17 05:33:54] AI/User transcribed: about
+[2025-11-17 05:33:54] AI/User transcribed: yourself
+[2025-11-17 05:33:54] AI/User transcribed: ?
+=== Session Ended ===
+Hello
+!
+Thank
+you
+for
+joining
+the
+interview
+today
+.
+To
+get
+started
+,
+could
+you
+please
+tell
+me
+your
+name
+and
+a
+little
+bit
+about
+yourself
+?

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>CareerPilot — Onboarding</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#0b1020; --card:#121937; --muted:#9fb2ff; --text:#eaf0ff; --accent:#6aa7ff; }
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(120deg,#0b1020,#10163a);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);}
+    .wrap{min-height:100dvh;display:grid;place-items:center;padding:24px}
+    .card{width:min(680px,95vw);background:var(--card);border:1px solid #20306b;border-radius:18px;padding:28px 24px;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+    h1{margin:0 0 8px;font-weight:700;letter-spacing:.2px}
+    p.sub{margin:.25rem 0 1.25rem;color:var(--muted)}
+    form{display:grid;gap:14px}
+    label{font-size:.95rem;color:#bfc9ff}
+    input,select{width:100%;padding:12px 14px;border-radius:12px;border:1px solid #26336b;background:#0f1430;color:var(--text)}
+    input[type="file"]{padding:10px;background:#0f1430}
+    .row{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+    .actions{display:flex;gap:10px;justify-content:center;align-items:center;margin-top:6px}
+    button{background:var(--accent);border:0;color:#07102a;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}
+    .ghost{background:transparent;border:1px solid #334489;color:#cfe0ff}
+    .hint{font-size:.85rem;color:#95a6ff}
+    .toast{display:none;margin-top:10px;font-size:.9rem}
+    .toast.show{display:block}
+    .spinner{display:none;width:18px;height:18px;border:3px solid #7fb2ff;border-top-color:transparent;border-radius:50%;animation:spin 1s linear infinite}
+    .spinner.show{display:inline-block}
+    #dashboard-btn {display: none;margin-top:18px;width:100%;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    footer{margin-top:16px;color:#8fa2ff;font-size:.85rem}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Tell us what you’re looking for</h1>
+      <p class="sub">We’ll use this to fetch roles, score matches, and find referrers.</p>
+      <form id="onboardForm" enctype="multipart/form-data">
+        <div>
+          <label for="role">Interested Role (1 keyword only allowed)</label>
+          <input id="role" name="role" placeholder="e.g., Software Engineer or Data Analyst" required />
+        </div>
+        <div class="row">
+          <div>
+            <label for="yoe">Location</label>
+            <input id="yoe" name="yoe" placeholder="e.g., San Jose, CA" required />
+          </div>
+          <div>
+            <label for="resume">Upload Resume (PDF/DOC)</label>
+            <input id="resume" name="resume" type="file" accept=".pdf,.doc,.docx" required />
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit">Get Jobs<span class="spinner" id="spin"></span></button>
+        </div>
+        <div id="msg" class="toast"></div>
+        <button id="dashboard-btn" onclick="goToDashboard()" type="button">Go to Dashboard</button>
+        <p class="hint">We’ll store your inputs locally and POST to the backend. If an endpoint isn’t ready, we’ll fall back and still get you to the dashboard with pre-existing scrapped job entries.</p>
+      </form>
+      <footer>CareerPilot MVP • HTML/CSS/JS + Flask + MongoDB</footer>
+    </div>
+  </div>
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const msg = (t, ok = true) => {
+      const m = $("#msg"); m.textContent = t; m.className = "toast show"; m.style.color = ok ? "#7fffb0" : "#ff9a9a";
+    }
+    const spin = (on) => $("#spin").classList.toggle("show", !!on);
+
+    $("#onboardForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      spin(true); msg("Submitting…");
+      const keyword = $("#role").value.trim();
+      const location = $("#yoe").value.trim();
+      const resumeFile = $("#resume").files[0];
+
+      const formData = new FormData();
+      formData.append("keyword", keyword);
+      formData.append("location", location);
+      formData.append("resume", resumeFile);
+
+      try {
+        const response = await fetch("http://localhost:5001/trigger", {
+          method: "POST",
+          body: formData,
+        });
+        spin(false);
+
+        if (response.ok) {
+          // Store form info in localStorage for dashboard
+          localStorage.setItem('cp_role', keyword);
+          localStorage.setItem('cp_location', location);
+          msg("Submission successful! Matching jobs fetched.", true);
+          $("#dashboard-btn").style.display = "block";
+        } else {
+          msg("Error: Submission failed.", false);
+          $("#dashboard-btn").style.display = "none";
+        }
+      } catch (err) {
+        spin(false);
+        msg("Network error or backend not reachable.", false);
+        $("#dashboard-btn").style.display = "none";
+      }
+    });
+
+    function goToDashboard() {
+      window.location.href = "dashboard.html";
+    }
+  </script>
+</body>
+</html>

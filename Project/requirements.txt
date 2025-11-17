@@ -1,0 +1,4 @@
+torch
+llama-index
+transformers
+sentence-transformers
