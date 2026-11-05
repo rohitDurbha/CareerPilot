@@ -1,6 +1,6 @@
 from pathlib import Path
 import datetime
-from dotenv import load_dotenv, find_dotenv
+from dotenv import load_dotenv
 from livekit.agents import (
     JobContext,
     WorkerOptions,
@@ -14,7 +14,7 @@ from livekit.plugins import deepgram
 # ==========
 # LOAD ENV
 # ==========
-load_dotenv(find_dotenv(), override=True)
+load_dotenv(Path(__file__).parent / ".env", override=True)
 
 # === Where to store the AI-transcribed log ===
 AI_TRANSCRIBED_FILE = Path(__file__).parent / "user_transcribed_log.txt"
@@ -23,7 +23,6 @@ AI_TRANSCRIBED_FILE.touch(exist_ok=True)
 conversation_log = []
 
 async def entrypoint(ctx: JobContext):
-    # You can use 'args' global for job_title and job_description!
     await ctx.connect()
     session = AgentSession()
 
@@ -53,10 +52,6 @@ async def entrypoint(ctx: JobContext):
             with open(AI_TRANSCRIBED_FILE, "a", encoding="utf-8") as f:
                 f.write(f"[{ts}] AI transcribed: {msg.strip()}\n")
 
-    # Put job title and job description into agent session, log, or your flow as needed
-    print("Agent starting with job title:", args.job_title)
-    print("Job description:", args.job_description)
-
     await session.start(
         agent=Agent(
             instructions="You are a helpful real-time transcriber. "
@@ -72,6 +67,4 @@ async def entrypoint(ctx: JobContext):
         print(f"[{msg['timestamp']}] {msg['role'].upper()}: {msg['text']}")
 
 if __name__ == "__main__":
-    # All CLI parsing already done above.
-    # No need to check args.command - argparse enforces it.
     cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
