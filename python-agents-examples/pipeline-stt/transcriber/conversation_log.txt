@@ -1,6 +1,0 @@
-[2025-10-26 10:51:11] USER: Yeah. I am. Thank you for joining the meeting.
-[2025-10-26 10:51:27] USER: Thank you. Can we finish the meeting now?
-[2025-10-26 10:51:38] USER: Good
-[2025-10-26 10:51:38] AI: Good
-[2025-10-26 10:56:21] USER: Hello?
-[2025-10-26 10:56:32] USER: Can we begin the interview?
