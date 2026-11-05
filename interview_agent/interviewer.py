@@ -3,7 +3,6 @@
 Run with `python interviewer.py connect --room <room>`.
 """
 
-import os
 import logging
 import datetime
 import uuid

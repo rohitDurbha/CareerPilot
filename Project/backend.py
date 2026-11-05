@@ -5,7 +5,9 @@ import asyncio
 import aiohttp
 import subprocess
 import re
+import sys
 import traceback
+from pathlib import Path
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -29,8 +31,12 @@ mongo_collection = mongo_db[MONGO_COLLECTION]
 pymongo_client = MongoClient(MONGO_URI)
 pymongo_collection = pymongo_client[MONGO_DB][MONGO_COLLECTION]
 
-AI_LOG_PATH = "/Users/sripathisaipranav/Desktop/Calhacks/python-agents-examples/basics/ai_interview_log.txt"
-USER_LOG_PATH = "/Users/sripathisaipranav/Desktop/Calhacks/python-agents-examples/basics/user_transcribed_log.txt"
+# The LiveKit interview agents live in interview_agent/ at the repository root.
+AGENT_DIR = Path(__file__).resolve().parent.parent / "interview_agent"
+INTERVIEWER_SCRIPT = str(AGENT_DIR / "interviewer.py")
+TRANSCRIBER_SCRIPT = str(AGENT_DIR / "transcriber.py")
+AI_LOG_PATH = str(AGENT_DIR / "ai_interview_log.txt")
+USER_LOG_PATH = str(AGENT_DIR / "user_transcribed_log.txt")
 
 ACTIVEPIECES_ENDPOINT_1 = "https://cloud.activepieces.com/api/v1/webhooks/fBxRSJDCR5u5vZ5ITnMHh"
 ACTIVEPIECES_ENDPOINT_2 = 'https://cloud.activepieces.com/api/v1/webhooks/8Qu1Dn3i1kQgMTufjucRa'
@@ -114,8 +120,8 @@ def run_agents():
 
         agent_procs["agent1"] = subprocess.Popen(
             [
-                "python",
-                "/Users/sripathisaipranav/Desktop/Calhacks/python-agents-examples/basics/listen_and_respond.py",
+                sys.executable,
+                INTERVIEWER_SCRIPT,
                 "connect",
                 "--room",
                 "test-room",
@@ -123,8 +129,8 @@ def run_agents():
         )
         agent_procs["agent2"] = subprocess.Popen(
             [
-                "python",
-                "/Users/sripathisaipranav/Desktop/Calhacks/python-agents-examples/basics/agent.py",
+                sys.executable,
+                TRANSCRIBER_SCRIPT,
                 "connect",
                 "--room",
                 "test-room",
