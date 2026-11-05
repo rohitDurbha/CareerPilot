@@ -1,0 +1,4 @@
+.env
+__pycache__/
+ai_interview_log.txt
+user_transcribed_log.txt
