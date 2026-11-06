@@ -2,9 +2,9 @@
 
 Work moves one step at a time. A step is ticked when it is done and an item is ticked once all of its steps are done.
 
-- [ ] 1. Debloat the repository
+- [x] 1. Debloat the repository
   - [x] a. Keep only the two LiveKit interview agents that `Project/backend.py` launches, move them into `interview_agent/` with their own requirements, delete the rest of the vendored `python-agents-examples` folder, and point the backend at the new paths.
-  - [ ] b. Remove `Project/test.html` and drop torch, transformers, sentence-transformers and llama-index from `Project/requirements.txt` in favour of the packages the Flask app actually imports.
+  - [x] b. Remove `Project/test.html` and drop torch, transformers, sentence-transformers and llama-index from `Project/requirements.txt` in favour of the packages the Flask app actually imports.
 - [ ] 2. Merge the duplicate `Project/app.py` and `Project/backend.py` into one Flask app, and move the Activepieces webhook URLs and the MongoDB connection string into environment variables.
 - [ ] 3. Add a local mock mode that replays sample job and scoring payloads so every workflow can be tested without Activepieces or Apify.
 - [ ] 4. Replace the paid Tavus and Hedra video avatars with a free mock interview stack. LiveKit Cloud free tier plus the Gemini Live API free tier for real-time voice, or Groq with faster-whisper and Piper for a fully open setup. Use the open-source TalkingHead three.js avatar for a lip-synced face in the browser.
