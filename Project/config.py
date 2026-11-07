@@ -44,9 +44,10 @@ class Settings:
         return value
 
 
-def load_settings(env_file=ENV_FILE):
+def load_settings(env_file=None):
     """Load settings, letting real environment variables win over the .env file."""
-    if env_file and Path(env_file).is_file():
+    env_file = ENV_FILE if env_file is None else env_file
+    if Path(env_file).is_file():
         load_dotenv(env_file, override=False)
     return Settings(
         mongo_uri=_read("MONGO_URI", DEFAULT_MONGO_URI),
