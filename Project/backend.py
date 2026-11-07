@@ -16,20 +16,22 @@ from supabase import create_client, Client
 import motor.motor_asyncio
 from pymongo import MongoClient
 
+from config import MissingSettingError, load_settings
+
 # --- Configuration and clients ---
 
-MONGO_URI = 'mongodb+srv://cs156:cs156@careerpilot.thhqt84.mongodb.net/?retryWrites=true&w=majority&appName=CareerPilo'
-MONGO_DB = 'scrapped_jobs'
-MONGO_COLLECTION = 'Careerpilot'
+# Every connection string and webhook URL comes from the environment.
+# See Project/.env.example for the full list.
+settings = load_settings()
 
 # Async client (for your async workflows)
-mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
-mongo_db = mongo_client[MONGO_DB]
-mongo_collection = mongo_db[MONGO_COLLECTION]
+mongo_client = motor.motor_asyncio.AsyncIOMotorClient(settings.mongo_uri)
+mongo_db = mongo_client[settings.mongo_db]
+mongo_collection = mongo_db[settings.mongo_collection]
 
 # Sync client (for synchronous endpoints like /latest_jobs)
-pymongo_client = MongoClient(MONGO_URI)
-pymongo_collection = pymongo_client[MONGO_DB][MONGO_COLLECTION]
+pymongo_client = MongoClient(settings.mongo_uri)
+pymongo_collection = pymongo_client[settings.mongo_db][settings.mongo_collection]
 
 # The LiveKit interview agents live in interview_agent/ at the repository root.
 AGENT_DIR = Path(__file__).resolve().parent.parent / "interview_agent"
@@ -38,20 +40,30 @@ TRANSCRIBER_SCRIPT = str(AGENT_DIR / "transcriber.py")
 AI_LOG_PATH = str(AGENT_DIR / "ai_interview_log.txt")
 USER_LOG_PATH = str(AGENT_DIR / "user_transcribed_log.txt")
 
-ACTIVEPIECES_ENDPOINT_1 = "https://cloud.activepieces.com/api/v1/webhooks/fBxRSJDCR5u5vZ5ITnMHh"
-ACTIVEPIECES_ENDPOINT_2 = 'https://cloud.activepieces.com/api/v1/webhooks/8Qu1Dn3i1kQgMTufjucRa'
+
+def job_search_webhook():
+    return settings.require("job_search_webhook", "ACTIVEPIECES_JOB_SEARCH_WEBHOOK")
+
+
+def resume_match_webhook():
+    return settings.require("resume_match_webhook", "ACTIVEPIECES_RESUME_MATCH_WEBHOOK")
 
 # --- Flask and CORS initialization ---
 
 app = Flask(__name__)
 CORS(app)
 
+
+@app.errorhandler(MissingSettingError)
+def missing_setting(error):
+    return jsonify({"error": "Backend is not configured", "details": str(error)}), 503
+
 # --- Globals for subprocess management ---
 agent_procs = {"agent1": None, "agent2": None}
 
 # --- Helper async functions ---
 
-async def send_resume_to_activepieces(request, resume_text):
+async def send_resume_to_activepieces(request, resume_text, url):
     job_id = request.form.get("job_id", "")
     job_description = request.form.get("job_description", "")
     email = request.form.get("email", "")
@@ -63,7 +75,7 @@ async def send_resume_to_activepieces(request, resume_text):
         "resume_text": resume_text
     }
     async with aiohttp.ClientSession() as session:
-        async with session.post(ACTIVEPIECES_ENDPOINT_1, json=payload) as resp:
+        async with session.post(url, json=payload) as resp:
             try:
                 data = await resp.json()
             except Exception:
@@ -94,6 +106,8 @@ def upload_resume():
     try:
         if "resume" not in request.files:
             return jsonify({"error": "No resume uploaded"}), 400
+        # This route has always posted to the same webhook as the job search.
+        webhook = job_search_webhook()
         resume_file = request.files["resume"]
         pdf_reader = PdfReader(resume_file)
         resume_text = "\n".join([page.extract_text() or "" for page in pdf_reader.pages])
@@ -102,10 +116,12 @@ def upload_resume():
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(send_resume_to_activepieces(request, resume_text))
+        result = loop.run_until_complete(send_resume_to_activepieces(request, resume_text, webhook))
         print(result["data"])
         return jsonify(result)
 
+    except MissingSettingError:
+        raise
     except Exception as e:
         print(traceback.format_exc())
         return jsonify({"error": "Server error", "details": str(e)}), 500
@@ -186,6 +202,8 @@ def trigger():
         keyword = request.form.get("keyword", "")
         location = request.form.get("location", "")
         publishedAt = "r86400"  # Constant
+        search_url = job_search_webhook()
+        match_url = resume_match_webhook()
 
         if "resume" not in request.files:
             return jsonify({"error": "Resume file missing"}), 400
@@ -202,7 +220,7 @@ def trigger():
                 "location": location,
                 "publishedAt": publishedAt,
             }
-            result1 = await trigger_workflow(ACTIVEPIECES_ENDPOINT_1, payload1)
+            result1 = await trigger_workflow(search_url, payload1)
 
             if result1["status"] != 200:
                 return {
@@ -211,7 +229,7 @@ def trigger():
                 }
 
             payload2 = {"resume_text": resume_text}
-            result2 = await trigger_workflow(ACTIVEPIECES_ENDPOINT_2, payload2)
+            result2 = await trigger_workflow(match_url, payload2)
 
             if result2["status"] != 200:
                 return {
@@ -229,6 +247,8 @@ def trigger():
         result = loop.run_until_complete(run_workflows_sequentially())
         return {"response": result}
 
+    except MissingSettingError:
+        raise
     except Exception as e:
         print(traceback.format_exc())
         return jsonify({"error": "Server error", "details": str(e)}), 500

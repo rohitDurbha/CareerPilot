@@ -12,6 +12,7 @@ PROJECT = ROOT / "Project"
 IMPORT_TO_PACKAGE = {
     "bs4": "beautifulsoup4",
     "flask_cors": "flask-cors",
+    "dotenv": "python-dotenv",
 }
 
 HEAVY_PACKAGES = {"torch", "transformers", "sentence-transformers", "llama-index"}
@@ -35,7 +36,8 @@ def _third_party_imports():
                 found.update(alias.name.split(".")[0] for alias in node.names)
             elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
                 found.add(node.module.split(".")[0])
-    return {name for name in found if name not in sys.stdlib_module_names}
+    local = {script.stem for script in PROJECT.glob("*.py")}
+    return {name for name in found if name not in sys.stdlib_module_names | local}
 
 
 def test_every_import_is_listed():

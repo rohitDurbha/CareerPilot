@@ -1,4 +1,4 @@
-# Packages imported by app.py, backend.py and jd_crawler.py.
+# Packages imported by app.py, backend.py, config.py and jd_crawler.py.
 # The interview agents keep their own list in interview_agent/requirements.txt.
 flask>=3.0
 flask-cors>=4.0
@@ -8,4 +8,5 @@ pymongo>=4.6
 PyPDF2>=3.0
 supabase>=2.0
 requests>=2.31
+python-dotenv>=1.0
 beautifulsoup4>=4.12

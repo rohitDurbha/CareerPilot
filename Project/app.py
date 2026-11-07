@@ -8,18 +8,18 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes and origins
 
-# MongoDB Configuration
-MONGO_URI = 'mongodb+srv://username:password@cluster.mongodb.net/database_name?retryWrites=true&w=majority'
-MONGO_DB = 'your_database'
-MONGO_COLLECTION = 'workflow_results'
+from config import load_settings
 
-mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_URI)
-mongo_db = mongo_client[MONGO_DB]
-mongo_collection = mongo_db[MONGO_COLLECTION]
+# Connection strings and webhook URLs come from the environment.
+# See Project/.env.example. This file is being folded into backend.py.
+settings = load_settings()
 
-# Your actual Activepieces workflow webhook URLs
-ENDPOINT_1 = 'https://cloud.activepieces.com/api/v1/webhooks/fBxRSJDCR5u5vZ5ITnMHh'
-ENDPOINT_2 = 'https://cloud.activepieces.com/projects/YpzM2RF9vJtLfo4RI7tPk/flows/qKGh21mfk4tKxK6QuE63e'
+mongo_client = motor.motor_asyncio.AsyncIOMotorClient(settings.mongo_uri)
+mongo_db = mongo_client[settings.mongo_db]
+mongo_collection = mongo_db[settings.mongo_collection]
+
+ENDPOINT_1 = settings.job_search_webhook
+ENDPOINT_2 = settings.resume_match_webhook
 
 async def trigger_workflow(url, payload):
     async with aiohttp.ClientSession() as session:
