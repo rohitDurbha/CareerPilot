@@ -1,10 +1,6 @@
-import base64
-import uuid
-import datetime
 import asyncio
 import aiohttp
 import subprocess
-import re
 import sys
 import traceback
 from pathlib import Path
@@ -12,8 +8,6 @@ from pathlib import Path
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PyPDF2 import PdfReader
-from supabase import create_client, Client
-import motor.motor_asyncio
 from pymongo import MongoClient
 
 from config import MissingSettingError, load_settings
@@ -24,12 +18,7 @@ from config import MissingSettingError, load_settings
 # See Project/.env.example for the full list.
 settings = load_settings()
 
-# Async client (for your async workflows)
-mongo_client = motor.motor_asyncio.AsyncIOMotorClient(settings.mongo_uri)
-mongo_db = mongo_client[settings.mongo_db]
-mongo_collection = mongo_db[settings.mongo_collection]
-
-# Sync client (for synchronous endpoints like /latest_jobs)
+# MongoDB holds the scored jobs that /latest_jobs returns.
 pymongo_client = MongoClient(settings.mongo_uri)
 pymongo_collection = pymongo_client[settings.mongo_db][settings.mongo_collection]
 
@@ -90,10 +79,6 @@ async def trigger_workflow(url, payload):
             except Exception:
                 data = await resp.text()
             return {"status": resp.status, "data": data}
-
-async def save_to_mongo(result):
-    insert_result = await mongo_collection.insert_one(result)
-    return str(insert_result.inserted_id)
 
 # --- Flask Routes ---
 
