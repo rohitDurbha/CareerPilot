@@ -45,12 +45,21 @@ Stores job records, resume scores, interview transcripts, analytics, and session
 
 **Run Instructions:**
 
-Inside meet folder
-Npm init 
-Npm run dev
+Start the Flask backend from the `Project` folder. It is the only backend now and it listens on port 5001, which is where `index.html` and `dashboard.html` send their requests.
 
-inisde project 
-python app.py or python app.py -> I forgot what is the updated code
+```bash
+cd Project
+pip install -r requirements.txt
+cp .env.example .env   # then fill in MongoDB and the Activepieces webhooks
+python backend.py
+```
 
-docker for live kit to run 
+Start the interview room from the `meet` folder in a second terminal.
 
+```bash
+cd meet
+npm install
+npm run dev
+```
+
+The mock interview agents in `interview_agent/` need a LiveKit server, which you can run locally with Docker or point at LiveKit Cloud.
