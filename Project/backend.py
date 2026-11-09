@@ -221,31 +221,25 @@ def trigger():
                 "publishedAt": publishedAt,
             }
             result1 = await trigger_workflow(search_url, payload1)
-
             if result1["status"] != 200:
-                return {
-                    "message": "First workflow failed",
-                    "result": result1,
-                }
+                return {"message": "Job search workflow failed", "results": [result1]}
 
             payload2 = {"resume_text": resume_text}
             result2 = await trigger_workflow(match_url, payload2)
-
             if result2["status"] != 200:
                 return {
-                    "message": "Second workflow failed",
-                    "result": result2,
+                    "message": "Resume match workflow failed",
+                    "results": [result1, result2],
                 }
 
-            success_output = {"message": "Both workflows succeeded", "results": [result1, result2]}
-            # mongo_id = await save_to_mongo(success_output)
-            # success_output["mongo_id"] = mongo_id
-            return True
+            return {"message": "Both workflows succeeded", "results": [result1, result2]}
 
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        result = loop.run_until_complete(run_workflows_sequentially())
-        return {"response": result}
+        outcome = loop.run_until_complete(run_workflows_sequentially())
+        # Report a failed workflow as an error so the page does not show success.
+        succeeded = all(r["status"] == 200 for r in outcome["results"]) and len(outcome["results"]) == 2
+        return jsonify(outcome), (200 if succeeded else 502)
 
     except MissingSettingError:
         raise
