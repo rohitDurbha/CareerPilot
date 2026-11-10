@@ -235,8 +235,13 @@ def trigger():
 # --- Synchronous /latest_jobs endpoint using PyMongo ---
 @app.route("/latest_jobs", methods=["GET"])
 def latest_jobs():
+    # MongoDB treats a limit of 0 as no limit, so only positive numbers are allowed.
+    raw_limit = request.args.get("limit", "20")
+    if not raw_limit.isdigit() or int(raw_limit) < 1:
+        return jsonify({"error": "limit must be a positive whole number"}), 400
+    limit = int(raw_limit)
+
     try:
-        limit = int(request.args.get("limit", 20))
         cursor = pymongo_collection.find().sort([
             ("lastUpdatedTime", -1),
             ("resumeScore", -1)
