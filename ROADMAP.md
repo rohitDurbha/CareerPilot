@@ -5,10 +5,10 @@ Work moves one step at a time. A step is ticked when it is done and an item is t
 - [x] 1. Debloat the repository
   - [x] a. Keep only the two LiveKit interview agents that `Project/backend.py` launches, move them into `interview_agent/` with their own requirements, delete the rest of the vendored `python-agents-examples` folder, and point the backend at the new paths.
   - [x] b. Remove `Project/test.html` and drop torch, transformers, sentence-transformers and llama-index from `Project/requirements.txt` in favour of the packages the Flask app actually imports.
-- [ ] 2. Merge the duplicate `Project/app.py` and `Project/backend.py` into one Flask app, and move the Activepieces webhook URLs and the MongoDB connection string into environment variables.
+- [x] 2. Merge the duplicate `Project/app.py` and `Project/backend.py` into one Flask app, and move the Activepieces webhook URLs and the MongoDB connection string into environment variables.
   - [x] a. Add a small `Project/config.py` that reads the MongoDB connection string, database and collection names and the two Activepieces webhook URLs from environment variables (with an optional `Project/.env`), document them in `Project/.env.example`, and have both Flask files use it so no URL or password stays in the code.
   - [x] b. Fold the one useful piece of `Project/app.py` into `Project/backend.py`, delete `app.py`, drop the unused Supabase import, and point the HTML pages and README at the single app on port 5001.
-  - [ ] c. Add Flask test client tests for every route with the workflows and MongoDB stubbed out, so the merged app is covered before the mock mode in item 3.
+  - [x] c. Add Flask test client tests for every route with the workflows and MongoDB stubbed out, so the merged app is covered before the mock mode in item 3.
 - [ ] 3. Add a local mock mode that replays sample job and scoring payloads so every workflow can be tested without Activepieces or Apify.
 - [ ] 4. Replace the paid Tavus and Hedra video avatars with a free mock interview stack. LiveKit Cloud free tier plus the Gemini Live API free tier for real-time voice, or Groq with faster-whisper and Piper for a fully open setup. Use the open-source TalkingHead three.js avatar for a lip-synced face in the browser.
 - [ ] 5. Replace the LinkedIn crawler, which breaks LinkedIn's terms, with public Greenhouse, Lever and Ashby job board APIs.
