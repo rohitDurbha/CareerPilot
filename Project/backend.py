@@ -10,6 +10,7 @@ from flask_cors import CORS
 from PyPDF2 import PdfReader
 from pymongo import MongoClient
 
+import mock_workflows
 from config import MissingSettingError, load_settings
 
 # --- Configuration and clients ---
@@ -31,10 +32,15 @@ USER_LOG_PATH = str(AGENT_DIR / "user_transcribed_log.txt")
 
 
 def job_search_webhook():
+    # Mock mode never needs the real webhook, so it works with an empty .env.
+    if settings.mock_mode:
+        return mock_workflows.JOB_SEARCH_URL
     return settings.require("job_search_webhook", "ACTIVEPIECES_JOB_SEARCH_WEBHOOK")
 
 
 def resume_match_webhook():
+    if settings.mock_mode:
+        return mock_workflows.RESUME_MATCH_URL
     return settings.require("resume_match_webhook", "ACTIVEPIECES_RESUME_MATCH_WEBHOOK")
 
 # --- Flask and CORS initialization ---
@@ -63,15 +69,12 @@ async def send_resume_to_activepieces(request, resume_text, url):
         "email": email,
         "resume_text": resume_text
     }
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, json=payload) as resp:
-            try:
-                data = await resp.json()
-            except Exception:
-                data = await resp.text()
-            return {"status": resp.status, "data": data}
+    return await trigger_workflow(url, payload)
 
 async def trigger_workflow(url, payload):
+    # mock:// addresses are answered from Project/mock_data with no network call.
+    if mock_workflows.is_mock_url(url):
+        return mock_workflows.replay(url, payload)
     async with aiohttp.ClientSession() as session:
         async with session.post(url, json=payload) as resp:
             try:
@@ -84,6 +87,8 @@ async def trigger_workflow(url, payload):
 
 @app.route("/", methods=["GET"])
 def home():
+    if settings.mock_mode:
+        return "Backend is running in mock mode."
     return "Backend is running."
 
 @app.route("/upload_resume", methods=["POST"])
