@@ -34,13 +34,28 @@ class FakeReader:
         self.pages = [FakePage(text)]
 
 
-@pytest.fixture
-def backend(monkeypatch, tmp_path):
-    monkeypatch.setattr(config, "ENV_FILE", tmp_path / "missing.env")
-    monkeypatch.setenv("ACTIVEPIECES_JOB_SEARCH_WEBHOOK", SEARCH_URL)
-    monkeypatch.setenv("ACTIVEPIECES_RESUME_MATCH_WEBHOOK", MATCH_URL)
+def _fresh_backend(monkeypatch):
     sys.modules.pop("backend", None)
     module = importlib.import_module("backend")
     module.app.config["TESTING"] = True
     monkeypatch.setattr(module, "PdfReader", FakeReader)
     return module
+
+
+@pytest.fixture
+def backend(monkeypatch, tmp_path):
+    monkeypatch.setattr(config, "ENV_FILE", tmp_path / "missing.env")
+    monkeypatch.delenv("CAREERPILOT_MOCK", raising=False)
+    monkeypatch.setenv("ACTIVEPIECES_JOB_SEARCH_WEBHOOK", SEARCH_URL)
+    monkeypatch.setenv("ACTIVEPIECES_RESUME_MATCH_WEBHOOK", MATCH_URL)
+    return _fresh_backend(monkeypatch)
+
+
+@pytest.fixture
+def mock_backend(monkeypatch, tmp_path):
+    """The backend in mock mode with no webhook URLs configured at all."""
+    monkeypatch.setattr(config, "ENV_FILE", tmp_path / "missing.env")
+    monkeypatch.setenv("CAREERPILOT_MOCK", "1")
+    monkeypatch.delenv("ACTIVEPIECES_JOB_SEARCH_WEBHOOK", raising=False)
+    monkeypatch.delenv("ACTIVEPIECES_RESUME_MATCH_WEBHOOK", raising=False)
+    return _fresh_backend(monkeypatch)
