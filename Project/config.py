@@ -21,9 +21,16 @@ class MissingSettingError(RuntimeError):
     """Raised when a feature needs a setting that has not been provided."""
 
 
+TRUE_WORDS = {"1", "true", "yes", "on"}
+
+
 def _read(name, default=""):
     value = os.environ.get(name, "").strip()
     return value or default
+
+
+def _read_flag(name):
+    return _read(name).lower() in TRUE_WORDS
 
 
 @dataclass(frozen=True)
@@ -33,6 +40,7 @@ class Settings:
     mongo_collection: str
     job_search_webhook: str
     resume_match_webhook: str
+    mock_mode: bool = False
 
     def require(self, field, env_name):
         """Return a setting or raise a clear error naming the variable to set."""
@@ -55,4 +63,5 @@ def load_settings(env_file=None):
         mongo_collection=_read("MONGO_COLLECTION", DEFAULT_MONGO_COLLECTION),
         job_search_webhook=_read("ACTIVEPIECES_JOB_SEARCH_WEBHOOK"),
         resume_match_webhook=_read("ACTIVEPIECES_RESUME_MATCH_WEBHOOK"),
+        mock_mode=_read_flag("CAREERPILOT_MOCK"),
     )

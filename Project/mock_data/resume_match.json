@@ -1,0 +1,23 @@
+{
+  "message": "Resume scored against the latest jobs",
+  "scores": [
+    {
+      "jobId": "mock-1001",
+      "resumeScore": 91,
+      "matchedSkills": ["SQL", "Python", "dashboards", "reporting"],
+      "missingSkills": ["A/B testing"]
+    },
+    {
+      "jobId": "mock-1002",
+      "resumeScore": 78,
+      "matchedSkills": ["SQL", "Tableau"],
+      "missingSkills": ["dbt", "healthcare data"]
+    },
+    {
+      "jobId": "mock-1003",
+      "resumeScore": 64,
+      "matchedSkills": ["Python", "SQL"],
+      "missingSkills": ["Airflow", "Snowflake"]
+    }
+  ]
+}

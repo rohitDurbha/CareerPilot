@@ -1,0 +1,32 @@
+{
+  "message": "Job search finished",
+  "jobs": [
+    {
+      "jobId": "mock-1001",
+      "jobTitle": "Data Analyst",
+      "companyName": "Harbor Analytics",
+      "location": "San Jose, CA",
+      "jobDescription": "Build dashboards in SQL and Python, own weekly reporting for the sales team and partner with product managers on experiment readouts.",
+      "companyUrl": "https://example.com/jobs/mock-1001",
+      "publishedAt": "2026-11-10T16:00:00Z"
+    },
+    {
+      "jobId": "mock-1002",
+      "jobTitle": "Business Intelligence Analyst",
+      "companyName": "Northwind Health",
+      "location": "Remote",
+      "jobDescription": "Model clinical operations data in dbt, maintain Tableau workbooks and write clear summaries for leadership.",
+      "companyUrl": "https://example.com/jobs/mock-1002",
+      "publishedAt": "2026-11-10T19:30:00Z"
+    },
+    {
+      "jobId": "mock-1003",
+      "jobTitle": "Junior Data Engineer",
+      "companyName": "Cedar Logistics",
+      "location": "Oakland, CA",
+      "jobDescription": "Maintain Airflow pipelines that load shipment events into Snowflake and help the analytics team with data quality checks.",
+      "companyUrl": "https://example.com/jobs/mock-1003",
+      "publishedAt": "2026-11-11T08:15:00Z"
+    }
+  ]
+}
