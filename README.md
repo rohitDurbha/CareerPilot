@@ -54,6 +54,13 @@ cp .env.example .env   # then fill in MongoDB and the Activepieces webhooks
 python backend.py
 ```
 
+To try the job search and resume scoring without an Activepieces account, start the backend in mock mode instead. It answers both workflows from the sample payloads in `Project/mock_data`, so no webhook URLs are needed.
+
+```bash
+cd Project
+CAREERPILOT_MOCK=1 python backend.py
+```
+
 Start the interview room from the `meet` folder in a second terminal.
 
 ```bash

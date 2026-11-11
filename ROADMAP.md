@@ -10,6 +10,9 @@ Work moves one step at a time. A step is ticked when it is done and an item is t
   - [x] b. Fold the one useful piece of `Project/app.py` into `Project/backend.py`, delete `app.py`, drop the unused Supabase import, and point the HTML pages and README at the single app on port 5001.
   - [x] c. Add Flask test client tests for every route with the workflows and MongoDB stubbed out, so the merged app is covered before the mock mode in item 3.
 - [ ] 3. Add a local mock mode that replays sample job and scoring payloads so every workflow can be tested without Activepieces or Apify.
+  - [x] a. Add a `CAREERPILOT_MOCK` setting and sample job search and resume match payloads in `Project/mock_data`, and have `/trigger` and `/upload_resume` replay them through `mock://` addresses instead of calling Activepieces, with tests that block the network.
+  - [ ] b. Serve `/latest_jobs` in mock mode from the sample jobs joined with their scores, sorted the same way as MongoDB, without opening a MongoDB connection.
+  - [ ] c. Make `/run_agents` and `/cancel_file1` pretend to start and stop the interview agents in mock mode so the dashboard flow can be clicked through without LiveKit, and document the whole mock flow in the README.
 - [ ] 4. Replace the paid Tavus and Hedra video avatars with a free mock interview stack. LiveKit Cloud free tier plus the Gemini Live API free tier for real-time voice, or Groq with faster-whisper and Piper for a fully open setup. Use the open-source TalkingHead three.js avatar for a lip-synced face in the browser.
 - [ ] 5. Replace the LinkedIn crawler, which breaks LinkedIn's terms, with public Greenhouse, Lever and Ashby job board APIs.
 - [ ] 6. Keep resume scoring on the Groq free tier and add a clear score breakdown.
