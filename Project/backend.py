@@ -19,9 +19,18 @@ from config import MissingSettingError, load_settings
 # See Project/.env.example for the full list.
 settings = load_settings()
 
-# MongoDB holds the scored jobs that /latest_jobs returns.
-pymongo_client = MongoClient(settings.mongo_uri)
-pymongo_collection = pymongo_client[settings.mongo_db][settings.mongo_collection]
+# MongoDB holds the scored jobs that /latest_jobs returns. The client is only
+# created the first time a real request needs it, so mock mode and tests never
+# open a connection.
+pymongo_collection = None
+
+
+def jobs_collection():
+    global pymongo_collection
+    if pymongo_collection is None:
+        client = MongoClient(settings.mongo_uri)
+        pymongo_collection = client[settings.mongo_db][settings.mongo_collection]
+    return pymongo_collection
 
 # The LiveKit interview agents live in interview_agent/ at the repository root.
 AGENT_DIR = Path(__file__).resolve().parent.parent / "interview_agent"
@@ -247,7 +256,7 @@ def latest_jobs():
     limit = int(raw_limit)
 
     try:
-        cursor = pymongo_collection.find().sort([
+        cursor = jobs_collection().find().sort([
             ("lastUpdatedTime", -1),
             ("resumeScore", -1)
         ]).limit(limit)
