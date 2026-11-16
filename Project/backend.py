@@ -255,6 +255,10 @@ def latest_jobs():
         return jsonify({"error": "limit must be a positive whole number"}), 400
     limit = int(raw_limit)
 
+    if settings.mock_mode:
+        jobs = mock_workflows.latest_jobs(limit)
+        return jsonify({"count": len(jobs), "jobs": jobs, "mock": True})
+
     try:
         cursor = jobs_collection().find().sort([
             ("lastUpdatedTime", -1),

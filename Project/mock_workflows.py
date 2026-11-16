@@ -52,3 +52,32 @@ def replay(url, payload):
     data["mock"] = True
     data["received"] = received
     return {"status": 200, "data": data}
+
+
+def latest_jobs(limit):
+    """Return the sample jobs joined with their scores, like ``/latest_jobs``.
+
+    Each job gets its score fields merged in and a ``lastUpdatedTime`` taken
+    from ``publishedAt``. Jobs are ordered the way the MongoDB query orders
+    them, newest first and then by highest score, and cut to ``limit``.
+    """
+    jobs = load_sample("job_search.json")["jobs"]
+    scores = {
+        score["jobId"]: score
+        for score in load_sample("resume_match.json")["scores"]
+    }
+
+    joined = []
+    for job in jobs:
+        doc = dict(job)
+        doc["_id"] = job["jobId"]
+        doc["lastUpdatedTime"] = job.get("publishedAt", "")
+        score = scores.get(job["jobId"], {})
+        doc.update({key: value for key, value in score.items() if key != "jobId"})
+        doc["mock"] = True
+        joined.append(doc)
+
+    # Two stable sorts give the same order as sorting on both keys at once.
+    joined.sort(key=lambda doc: doc.get("resumeScore", 0), reverse=True)
+    joined.sort(key=lambda doc: doc["lastUpdatedTime"], reverse=True)
+    return joined[:limit]
