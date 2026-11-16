@@ -13,15 +13,27 @@ Work moves one step at a time. A step is ticked when it is done and an item is t
   - [x] a. Add a `CAREERPILOT_MOCK` setting and sample job search and resume match payloads in `Project/mock_data`, and have `/trigger` and `/upload_resume` replay them through `mock://` addresses instead of calling Activepieces, with tests that block the network.
   - [x] b. Serve `/latest_jobs` in mock mode from the sample jobs joined with their scores, sorted the same way as MongoDB, without opening a MongoDB connection.
   - [x] c. Make `/run_agents` and `/cancel_file1` pretend to start and stop the interview agents in mock mode so the dashboard flow can be clicked through without LiveKit, and document the whole mock flow in the README.
-- [ ] 4. Replace the paid Tavus and Hedra video avatars with a free mock interview stack. LiveKit Cloud free tier plus the Gemini Live API free tier for real-time voice, or Groq with faster-whisper and Piper for a fully open setup. Use the open-source TalkingHead three.js avatar for a lip-synced face in the browser.
-- [ ] 5. Replace the LinkedIn crawler, which breaks LinkedIn's terms, with public Greenhouse, Lever and Ashby job board APIs.
-- [ ] 6. Keep resume scoring on the Groq free tier and add a clear score breakdown.
-- [ ] 7. Unify the frontend into the Next.js app so the dashboard and the interview room live in one place.
-- [ ] 8. Host for free. Vercel for Next.js, Render or Hugging Face Spaces for Flask, LiveKit Cloud free, MongoDB Atlas M0, and the Activepieces free cloud plan or a self-hosted n8n.
-- [ ] 9. Tests, CI and a rewritten README.
+
+The goal right now is a working hosted link. Items 4 to 6 get a demo online in mock mode first and then switch on the real services. The bigger rebuilds come after that.
+
+- [ ] 4. Make the app hostable.
+  - [ ] a. Replace every hardcoded `localhost:5001` call in `index.html`, `dashboard.html` and the interview room with one backend address setting, and replace the hardcoded `localhost:3000` interview room link with a second setting, both defaulting to the local addresses.
+  - [ ] b. Stop exposing the LiveKit secret to the browser. Read the key and secret in `meet` from server-only variables instead of `NEXT_PUBLIC_LIVEKIT_API_SECRET` and `NEXT_PUBLIC_LIVEKIT_API_KEY`, and add `meet/.env.example`.
+  - [ ] c. Make the Flask backend production ready. Serve it with gunicorn on the `PORT` variable, lock CORS to a configured frontend origin, and add tests for both.
+- [ ] 5. Deploy a public demo in mock mode.
+  - [ ] a. Add a Dockerfile and a Render blueprint (or Hugging Face Space config) that runs the backend with `CAREERPILOT_MOCK=1`, and check the image builds and answers `/` locally.
+  - [ ] b. Serve the dashboard and search pages from the `meet` Next.js app so one Vercel project hosts the whole frontend, pointed at the hosted backend.
+  - [ ] c. Add the live demo link and deploy steps to the README once Rohit has connected the accounts.
+- [ ] 6. Switch on the real services in the hosted app. Document the MongoDB Atlas and Activepieces settings for the host, add a health check that reports which services are configured, and turn mock mode off once the keys are in place.
+- [ ] 7. Replace the paid Tavus and Hedra video avatars with a free mock interview stack. LiveKit Cloud free tier plus the Gemini Live API free tier for real-time voice, or Groq with faster-whisper and Piper for a fully open setup. Use the open-source TalkingHead three.js avatar for a lip-synced face in the browser.
+- [ ] 8. Replace the LinkedIn crawler, which breaks LinkedIn's terms, with public Greenhouse, Lever and Ashby job board APIs.
+- [ ] 9. Keep resume scoring on the Groq free tier and add a clear score breakdown.
+- [ ] 10. Rebuild the plain HTML dashboard and search pages as real Next.js pages that share components with the interview room.
+- [ ] 11. Tests, CI and a rewritten README.
 
 ## Needs Rohit
 
 - Copy `Project/.env.example` to `Project/.env` and fill in the MongoDB connection string and the two Activepieces webhook URLs. The old webhook URLs were removed from the code, so either reuse them from your Activepieces flows or create fresh webhooks.
-- Rotate the MongoDB Atlas password for the `cs156` user. It is hardcoded in `Project/backend.py` and remains in git history even after item 2 moves it into an environment variable.
-- LiveKit Cloud project keys, a Gemini or Groq key, an Activepieces account, an Apify free account and a Vercel account.
+- Rotate the MongoDB Atlas password for the `cs156` user. It used to be hardcoded in `Project/backend.py` and still sits in git history even though item 2 moved it into an environment variable.
+- For the demo in item 5, create a free Render account (or Hugging Face) and a free Vercel account, connect both to this repository, and add the environment variables the README lists.
+- LiveKit Cloud project keys, a Gemini or Groq key, an Activepieces account and an Apify free account.
