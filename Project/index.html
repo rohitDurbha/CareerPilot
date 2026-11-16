@@ -28,6 +28,7 @@
     @keyframes spin{to{transform:rotate(360deg)}}
     footer{margin-top:16px;color:#8fa2ff;font-size:.85rem}
   </style>
+  <script src="settings.js"></script>
 </head>
 <body>
   <div class="wrap">
@@ -79,7 +80,7 @@
       formData.append("resume", resumeFile);
 
       try {
-        const response = await fetch("http://localhost:5001/trigger", {
+        const response = await fetch(CareerPilot.api('/trigger'), {
           method: "POST",
           body: formData,
         });

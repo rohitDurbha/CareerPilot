@@ -70,6 +70,7 @@
     .toggle-desc:hover {text-decoration: underline;}
     footer {margin-top:30px;color:#8fa2ff;font-size:.88rem;text-align:center;}
   </style>
+  <script src="settings.js"></script>
 </head>
 <body>
   <div class="wrap">
@@ -195,7 +196,7 @@
     }
     async function fetchJobs() {
       try {
-        const response = await fetch('http://localhost:5001/latest_jobs', {
+        const response = await fetch(CareerPilot.api('/latest_jobs'), {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' }
         });
@@ -248,7 +249,7 @@
       renderJobs(mockJobs);
     }
     function triggerAgents(jobDescription, jobTitle) {
-      fetch('http://localhost:5001/run_agents', {
+      fetch(CareerPilot.api('/run_agents'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -284,7 +285,7 @@
       if (event.target.classList.contains('train-btn')) {
         const jobDescription = event.target.getAttribute('data-description');
         const jobTitle = event.target.getAttribute('data-title');
-        window.open('http://localhost:3000/rooms/test-room', '_blank');
+        window.open(CareerPilot.meet('/rooms/test-room'), '_blank');
         triggerAgents(jobDescription, jobTitle);
       }
     });
