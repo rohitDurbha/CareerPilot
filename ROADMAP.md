@@ -17,7 +17,7 @@ Work moves one step at a time. A step is ticked when it is done and an item is t
 The goal right now is a working hosted link. Items 4 to 6 get a demo online in mock mode first and then switch on the real services. The bigger rebuilds come after that.
 
 - [ ] 4. Make the app hostable.
-  - [ ] a. Replace every hardcoded `localhost:5001` call in `index.html`, `dashboard.html` and the interview room with one backend address setting, and replace the hardcoded `localhost:3000` interview room link with a second setting, both defaulting to the local addresses.
+  - [x] a. Replace every hardcoded `localhost:5001` call in `index.html`, `dashboard.html` and the interview room with one backend address setting, and replace the hardcoded `localhost:3000` interview room link with a second setting, both defaulting to the local addresses.
   - [ ] b. Stop exposing the LiveKit secret to the browser. Read the key and secret in `meet` from server-only variables instead of `NEXT_PUBLIC_LIVEKIT_API_SECRET` and `NEXT_PUBLIC_LIVEKIT_API_KEY`, and add `meet/.env.example`.
   - [ ] c. Make the Flask backend production ready. Serve it with gunicorn on the `PORT` variable, lock CORS to a configured frontend origin, and add tests for both.
 - [ ] 5. Deploy a public demo in mock mode.

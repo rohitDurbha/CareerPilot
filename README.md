@@ -71,6 +71,10 @@ Here is what each part of the app does while mock mode is on.
 
 Every mock response carries `"mock": true` so it is easy to tell sample data from real results. To change the sample jobs or scores, edit the two JSON files in `Project/mock_data` and keep their `jobId` values matching.
 
+**Backend and interview room addresses**
+
+The pages default to the local servers, so nothing needs changing for local work. When the backend or the interview room runs somewhere else, change the two values at the top of `Project/settings.js`. `apiUrl` is where `index.html` and `dashboard.html` send their requests and `meetUrl` is where the dashboard opens the interview room. The interview room reaches the backend through `NEXT_PUBLIC_CAREERPILOT_API_URL`, which also falls back to `http://localhost:5001` when it is not set.
+
 Start the interview room from the `meet` folder in a second terminal.
 
 ```bash
