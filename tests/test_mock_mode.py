@@ -207,3 +207,70 @@ def test_real_mode_creates_the_mongo_client_once(monkeypatch, backend):
     assert backend.jobs_collection() == "jobs"
     assert backend.jobs_collection() == "jobs"
     assert created == [backend.settings.mongo_uri]
+
+
+def refuse_subprocess(monkeypatch, backend):
+    def no_popen(*args, **kwargs):
+        raise AssertionError("mock mode must not start the interview agents")
+
+    monkeypatch.setattr(backend.subprocess, "Popen", no_popen)
+    monkeypatch.setattr(backend, "agent_procs", {"agent1": None, "agent2": None})
+
+
+def test_mock_agent_process_acts_like_a_running_process():
+    proc = mock_workflows.MockAgentProcess(["python", "agent.py"])
+    assert proc.pid is None
+    assert proc.poll() is None
+    proc.terminate()
+    assert proc.poll() == 0
+    assert proc.wait(timeout=5) == 0
+    proc.terminate()
+    assert proc.poll() == 0
+
+
+def test_run_agents_pretends_to_start_in_mock_mode(monkeypatch, mock_backend):
+    refuse_subprocess(monkeypatch, mock_backend)
+    response = mock_backend.app.test_client().post(
+        "/run_agents", json={"job_title": "Data Analyst", "job_description": "SQL"}
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["status"] == "started"
+    assert body["mock"] is True
+    assert body["pids"] == {"agent1": None, "agent2": None}
+    assert body["received"] == {"job_title": "Data Analyst", "job_description": "SQL"}
+    interviewer = mock_backend.agent_procs["agent1"]
+    assert interviewer.args[1] == mock_backend.INTERVIEWER_SCRIPT
+    assert interviewer.poll() is None
+
+
+def test_cancel_stops_the_pretend_agents_in_mock_mode(monkeypatch, mock_backend):
+    refuse_subprocess(monkeypatch, mock_backend)
+    client = mock_backend.app.test_client()
+    client.post("/run_agents", json={})
+    response = client.get("/cancel_file1")
+
+    assert response.status_code == 200
+    details = response.get_json()["details"]
+    assert details == {"agent1": "terminated", "agent2": "terminated"}
+    assert mock_backend.agent_procs == {"agent1": None, "agent2": None}
+
+    again = client.get("/cancel_file1").get_json()["details"]
+    assert again == {"agent1": "not running", "agent2": "not running"}
+
+
+def test_run_agents_reports_mock_off_in_real_mode(monkeypatch, backend):
+    class Proc:
+        pid = 4242
+
+        def __init__(self, args):
+            self.args = args
+
+    monkeypatch.setattr(backend.subprocess, "Popen", Proc)
+    monkeypatch.setattr(backend, "agent_procs", {"agent1": None, "agent2": None})
+    body = backend.app.test_client().post("/run_agents", json={}).get_json()
+
+    assert body["mock"] is False
+    assert body["message"] == "Both agents launched successfully"
+    assert body["pids"] == {"agent1": 4242, "agent2": 4242}
