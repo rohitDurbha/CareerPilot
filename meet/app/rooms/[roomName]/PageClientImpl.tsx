@@ -29,6 +29,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useSetupE2EE } from '@/lib/useSetupE2EE';
 import { useLowCPUOptimizer } from '@/lib/usePerfomanceOptimiser';
+import { careerpilotApiUrl } from '@/lib/careerpilotApi';
 
 const CONN_DETAILS_ENDPOINT =
   process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT ?? '/api/connection-details';
@@ -204,7 +205,7 @@ function VideoConferenceComponent(props: {
   // const handleOnLeave = React.useCallback(() => router.push('/left'), [router]);
   const handleOnLeave = React.useCallback(() => {
   // Trigger Flask cancel endpoint when leaving
-  fetch("http://localhost:5001/cancel_file1", {
+  fetch(careerpilotApiUrl("/cancel_file1"), {
     method: "GET",
     headers: { "Content-Type": "application/json" },
   }).then(() => {
