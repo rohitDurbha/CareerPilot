@@ -134,3 +134,76 @@ def test_real_urls_still_go_over_the_network(monkeypatch, backend):
     result = asyncio.run(backend.trigger_workflow("https://example.test/hook", {}))
     assert result == {"status": 201, "data": {"ok": True}}
     assert calls == ["https://example.test/hook"]
+
+
+def refuse_mongo(monkeypatch, backend):
+    def no_client(*args, **kwargs):
+        raise AssertionError("mock mode must not open a MongoDB connection")
+
+    monkeypatch.setattr(backend, "MongoClient", no_client)
+
+
+def test_sample_latest_jobs_are_newest_first_with_scores():
+    jobs = mock_workflows.latest_jobs(10)
+    assert [job["jobId"] for job in jobs] == ["mock-1003", "mock-1002", "mock-1001"]
+    times = [job["lastUpdatedTime"] for job in jobs]
+    assert times == sorted(times, reverse=True)
+    first = jobs[0]
+    assert first["resumeScore"] == 64
+    assert first["missingSkills"] == ["Airflow", "Snowflake"]
+    assert first["_id"] == "mock-1003"
+    assert "jobId" in first and first["mock"] is True
+
+
+def test_sample_latest_jobs_break_time_ties_by_score(monkeypatch):
+    jobs = [
+        {"jobId": "a", "publishedAt": "2026-11-10T00:00:00Z"},
+        {"jobId": "b", "publishedAt": "2026-11-10T00:00:00Z"},
+        {"jobId": "c", "publishedAt": "2026-11-09T00:00:00Z"},
+    ]
+    scores = [
+        {"jobId": "a", "resumeScore": 50},
+        {"jobId": "b", "resumeScore": 80},
+        {"jobId": "c", "resumeScore": 99},
+    ]
+    samples = {
+        "job_search.json": {"jobs": jobs},
+        "resume_match.json": {"scores": scores},
+    }
+    monkeypatch.setattr(mock_workflows, "load_sample", lambda name: samples[name])
+    assert [job["jobId"] for job in mock_workflows.latest_jobs(5)] == ["b", "a", "c"]
+
+
+def test_latest_jobs_route_uses_the_samples_in_mock_mode(monkeypatch, mock_backend):
+    refuse_mongo(monkeypatch, mock_backend)
+    response = mock_backend.app.test_client().get("/latest_jobs?limit=2")
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["mock"] is True
+    assert body["count"] == 2
+    assert [job["jobId"] for job in body["jobs"]] == ["mock-1003", "mock-1002"]
+
+
+def test_latest_jobs_route_still_checks_the_limit_in_mock_mode(monkeypatch, mock_backend):
+    refuse_mongo(monkeypatch, mock_backend)
+    response = mock_backend.app.test_client().get("/latest_jobs?limit=0")
+    assert response.status_code == 400
+
+
+def test_backend_import_does_not_create_a_mongo_client(mock_backend):
+    assert mock_backend.pymongo_collection is None
+
+
+def test_real_mode_creates_the_mongo_client_once(monkeypatch, backend):
+    created = []
+
+    class FakeClient(dict):
+        def __init__(self, uri):
+            created.append(uri)
+            super().__init__({backend.settings.mongo_db: {backend.settings.mongo_collection: "jobs"}})
+
+    monkeypatch.setattr(backend, "MongoClient", FakeClient)
+    assert backend.jobs_collection() == "jobs"
+    assert backend.jobs_collection() == "jobs"
+    assert created == [backend.settings.mongo_uri]
