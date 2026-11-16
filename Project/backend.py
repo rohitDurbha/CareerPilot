@@ -65,6 +65,14 @@ def missing_setting(error):
 # --- Globals for subprocess management ---
 agent_procs = {"agent1": None, "agent2": None}
 
+
+def launch_agent(script):
+    """Start one interview agent, or a stand-in for it in mock mode."""
+    args = [sys.executable, script, "connect", "--room", "test-room"]
+    if settings.mock_mode:
+        return mock_workflows.MockAgentProcess(args)
+    return subprocess.Popen(args)
+
 # --- Helper async functions ---
 
 async def send_resume_to_activepieces(request, resume_text, url):
@@ -133,28 +141,16 @@ def run_agents():
         job_title = data.get("job_title", "")
         job_description = data.get("job_description", "")
 
-        agent_procs["agent1"] = subprocess.Popen(
-            [
-                sys.executable,
-                INTERVIEWER_SCRIPT,
-                "connect",
-                "--room",
-                "test-room",
-            ]
-        )
-        agent_procs["agent2"] = subprocess.Popen(
-            [
-                sys.executable,
-                TRANSCRIBER_SCRIPT,
-                "connect",
-                "--room",
-                "test-room",
-            ]
-        )
+        agent_procs["agent1"] = launch_agent(INTERVIEWER_SCRIPT)
+        agent_procs["agent2"] = launch_agent(TRANSCRIBER_SCRIPT)
+        message = "Both agents launched successfully"
+        if settings.mock_mode:
+            message = "Mock mode is on, so the agents were not started"
         return jsonify(
             {
                 "status": "started",
-                "message": "Both agents launched successfully",
+                "message": message,
+                "mock": settings.mock_mode,
                 "pids": {
                     "agent1": agent_procs["agent1"].pid,
                     "agent2": agent_procs["agent2"].pid,

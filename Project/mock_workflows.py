@@ -81,3 +81,29 @@ def latest_jobs(limit):
     joined.sort(key=lambda doc: doc.get("resumeScore", 0), reverse=True)
     joined.sort(key=lambda doc: doc["lastUpdatedTime"], reverse=True)
     return joined[:limit]
+
+
+class MockAgentProcess:
+    """Stands in for an interview agent process when mock mode is on.
+
+    It answers ``poll``, ``terminate`` and ``wait`` like ``subprocess.Popen``
+    so the backend can start and stop it the same way, but nothing is run and
+    no LiveKit room is joined. ``pid`` stays ``None`` because there is no
+    real process behind it.
+    """
+
+    pid = None
+
+    def __init__(self, args):
+        self.args = list(args)
+        self.returncode = None
+
+    def poll(self):
+        return self.returncode
+
+    def terminate(self):
+        if self.returncode is None:
+            self.returncode = 0
+
+    def wait(self, timeout=None):
+        return self.returncode
