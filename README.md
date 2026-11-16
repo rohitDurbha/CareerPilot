@@ -54,12 +54,22 @@ cp .env.example .env   # then fill in MongoDB and the Activepieces webhooks
 python backend.py
 ```
 
-To try the job search and resume scoring without an Activepieces account, start the backend in mock mode instead. It answers both workflows from the sample payloads in `Project/mock_data`, so no webhook URLs are needed.
+**Mock mode**
+
+To click through the whole dashboard without Activepieces, Apify, MongoDB or LiveKit, start the backend in mock mode. You do not need a `.env` file for this.
 
 ```bash
 cd Project
 CAREERPILOT_MOCK=1 python backend.py
 ```
+
+Here is what each part of the app does while mock mode is on.
+
+- `index.html` posts your resume to `/trigger`, and the backend answers both the job search and the resume match workflows from the sample payloads in `Project/mock_data` instead of calling Activepieces. Your resume text is only reported back as a length.
+- `dashboard.html` loads `/latest_jobs`, which returns the three sample jobs joined with their sample scores in the same order MongoDB would use.
+- Starting a mock interview from the dashboard calls `/run_agents`, which returns the usual started response with `"mock": true` but does not launch the LiveKit agents. Leaving the room calls `/cancel_file1`, which stops those stand-in agents the normal way.
+
+Every mock response carries `"mock": true` so it is easy to tell sample data from real results. To change the sample jobs or scores, edit the two JSON files in `Project/mock_data` and keep their `jobId` values matching.
 
 Start the interview room from the `meet` folder in a second terminal.
 
