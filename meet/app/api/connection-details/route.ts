@@ -1,4 +1,5 @@
 import { AccessToken } from "livekit-server-sdk";
+import { missingConfigMessage, readLiveKitServerConfig } from "@/lib/livekitServerConfig";
 
 export async function GET(req: Request) {
   try {
@@ -13,19 +14,14 @@ export async function GET(req: Request) {
       );
     }
 
-    const livekitUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
-    const apiKey = process.env.NEXT_PUBLIC_LIVEKIT_API_KEY;
-    const apiSecret = process.env.NEXT_PUBLIC_LIVEKIT_API_SECRET;
-
-    if (!livekitUrl || !apiKey || !apiSecret) {
+    const settings = readLiveKitServerConfig();
+    if (!settings.ok) {
       return new Response(
-        JSON.stringify({
-          error:
-            "Missing environment configuration. Check your .env.local file for NEXT_PUBLIC_LIVEKIT_URL, API_KEY, and API_SECRET.",
-        }),
+        JSON.stringify({ error: missingConfigMessage(settings.missing) }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
     }
+    const { url: livekitUrl, apiKey, apiSecret } = settings.config;
 
     const at = new AccessToken(apiKey, apiSecret, {
       identity: participantName,
@@ -36,7 +32,6 @@ export async function GET(req: Request) {
     });
     const token = await at.toJwt();
 
-    // ✅ Use key names expected by frontend!
     return new Response(JSON.stringify({
       serverUrl: livekitUrl,
       participantToken: token
