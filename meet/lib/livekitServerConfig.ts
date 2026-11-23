@@ -3,8 +3,8 @@
  *
  * Anything prefixed with NEXT_PUBLIC_ is inlined into the browser bundle by
  * Next.js, so the API key and secret are read from plain LIVEKIT_* variables.
- * The old NEXT_PUBLIC_LIVEKIT_API_KEY and NEXT_PUBLIC_LIVEKIT_API_SECRET names
- * are deliberately ignored so a stale .env.local cannot leak the secret again.
+ * The old public-prefixed key and secret names are deliberately ignored so a
+ * stale .env.local cannot leak the secret again.
  */
 export type LiveKitServerConfig = {
   url: string;
