@@ -18,7 +18,7 @@ The goal right now is a working hosted link. Items 4 to 6 get a demo online in m
 
 - [ ] 4. Make the app hostable.
   - [x] a. Replace every hardcoded `localhost:5001` call in `index.html`, `dashboard.html` and the interview room with one backend address setting, and replace the hardcoded `localhost:3000` interview room link with a second setting, both defaulting to the local addresses.
-  - [ ] b. Stop exposing the LiveKit secret to the browser. Read the key and secret in `meet` from server-only variables instead of `NEXT_PUBLIC_LIVEKIT_API_SECRET` and `NEXT_PUBLIC_LIVEKIT_API_KEY`, and add `meet/.env.example`.
+  - [x] b. Stop exposing the LiveKit secret to the browser. Read the key and secret in `meet` from server-only variables instead of `NEXT_PUBLIC_LIVEKIT_API_SECRET` and `NEXT_PUBLIC_LIVEKIT_API_KEY`, and add `meet/.env.example`.
   - [ ] c. Make the Flask backend production ready. Serve it with gunicorn on the `PORT` variable, lock CORS to a configured frontend origin, and add tests for both.
 - [ ] 5. Deploy a public demo in mock mode.
   - [ ] a. Add a Dockerfile and a Render blueprint (or Hugging Face Space config) that runs the backend with `CAREERPILOT_MOCK=1`, and check the image builds and answers `/` locally.
@@ -36,4 +36,5 @@ The goal right now is a working hosted link. Items 4 to 6 get a demo online in m
 - Copy `Project/.env.example` to `Project/.env` and fill in the MongoDB connection string and the two Activepieces webhook URLs. The old webhook URLs were removed from the code, so either reuse them from your Activepieces flows or create fresh webhooks.
 - Rotate the MongoDB Atlas password for the `cs156` user. It used to be hardcoded in `Project/backend.py` and still sits in git history even though item 2 moved it into an environment variable.
 - For the demo in item 5, create a free Render account (or Hugging Face) and a free Vercel account, connect both to this repository, and add the environment variables the README lists.
+- If the LiveKit API secret was ever stored under `NEXT_PUBLIC_LIVEKIT_API_SECRET` on a host such as Vercel, rotate it in the LiveKit Cloud dashboard and set the new key and secret as `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` instead.
 - LiveKit Cloud project keys, a Gemini or Groq key, an Activepieces account and an Apify free account.
