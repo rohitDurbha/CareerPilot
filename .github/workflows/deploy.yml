@@ -1,0 +1,83 @@
+name: Deploy
+
+# Publishes the CareerPilot demo to one free Vercel project on every push to
+# main. The search and dashboard pages are static files and the Flask backend
+# runs in mock mode as a Python function under /api, so no other host, account
+# or payment method is needed.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  VERCEL_PROJECT: careerpilot-demo
+
+jobs:
+  deploy:
+    name: Test and deploy to Vercel
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: Project/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install backend dependencies
+        run: pip install -r Project/requirements.txt pytest
+      - name: Run tests
+        run: python -m pytest -q
+
+      - name: Check for the Vercel token
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::The VERCEL_TOKEN repository secret is missing"
+            exit 1
+          fi
+      - name: Link the Vercel project
+        run: |
+          # Creating the project fails harmlessly once it exists. Linking by
+          # name keeps this deploy away from any other Vercel project.
+          npx --yes vercel@63.1.0 project add "$VERCEL_PROJECT" --token "$VERCEL_TOKEN" || true
+          npx --yes vercel@63.1.0 link --yes --project "$VERCEL_PROJECT" --token "$VERCEL_TOKEN"
+      - name: Publish to Vercel
+        run: |
+          for attempt in 1 2 3; do
+            if npx --yes vercel@63.1.0 deploy --prod --yes --token "$VERCEL_TOKEN" \
+                --env CAREERPILOT_MOCK=1 > deploy-url.txt; then
+              break
+            fi
+            if [ "$attempt" = 3 ]; then exit 1; fi
+            sleep 15
+          done
+          echo "Deployment $(tail -n 1 deploy-url.txt)"
+      - name: Find the production address
+        id: site
+        run: |
+          host=$(tail -n 1 deploy-url.txt | sed -E 's#^https?://##; s#/.*$##')
+          curl --silent --fail -H "Authorization: Bearer $VERCEL_TOKEN" \
+            "https://api.vercel.com/v13/deployments/$host" -o deployment.json
+          # The shortest vercel.app alias is the stable production address.
+          site=$(python -c "import json; a=[x for x in json.load(open('deployment.json')).get('alias') or [] if x.endswith('.vercel.app')]; print('https://'+min(a,key=len) if a else '')")
+          site=${site:-https://$host}
+          echo "url=$site" >> "$GITHUB_OUTPUT"
+          echo "Live at $site" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Check the live site
+        run: python .github/scripts/live_check.py "${{ steps.site.outputs.url }}"

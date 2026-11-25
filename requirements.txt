@@ -1,0 +1,9 @@
+# Runtime packages for the Vercel Python function in api/index.py. Vercel reads
+# this plain list from the repository root. It holds only what Project/backend.py
+# imports, and a test checks it stays in step with Project/requirements.txt.
+flask>=3.0
+flask-cors>=4.0
+aiohttp>=3.9
+pymongo>=4.6
+PyPDF2>=3.0
+python-dotenv>=1.0

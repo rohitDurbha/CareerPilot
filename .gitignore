@@ -29,3 +29,7 @@ pnpm-debug.log*
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Built by scripts/build-site.mjs for Vercel.
+site/
+.vercel/

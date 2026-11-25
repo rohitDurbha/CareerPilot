@@ -1,0 +1,14 @@
+# Never upload local secrets.
+.env
+.env.*
+!.env.example
+Project/.env
+# The hosted demo is the two static pages plus the backend function.
+# The interview room in meet/ is deployed separately.
+meet/
+interview_agent/
+tests/
+.github/
+site/
+**/__pycache__/
+.pytest_cache/
