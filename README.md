@@ -93,7 +93,7 @@ The demo runs on one free Vercel project. `.github/workflows/deploy.yml` tests t
 | Provider | Model | Free tier limits (checked November 25, 2026) |
 | --- | --- | --- |
 | Groq | `openai/gpt-oss-20b` | 30 requests and 8K tokens a minute, 1K requests and 200K tokens a day |
-| Gemini | `gemini-2.5-flash-lite`, falling back to `gemini-3.5-flash-lite` | Shown only in the Google AI Studio dashboard for each key |
+| Gemini | `gemini-3.5-flash-lite` (2.5 Flash-Lite is closed to new users) | Shown only in the Google AI Studio dashboard for each key |
 
 **Backend and interview room addresses**
 

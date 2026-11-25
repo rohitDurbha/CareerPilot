@@ -36,18 +36,18 @@ def calls(monkeypatch):
 def test_both_keys_working(calls, capsys):
     sent, answers = calls
     answers["groq"] = [GROQ_OK]
-    answers["gemini-2.5-flash-lite"] = [GEMINI_OK]
+    answers["gemini-3.5-flash-lite"] = [GEMINI_OK]
     assert key_check.main(KEYS) == 0
     out = capsys.readouterr().out
     assert "Groq openai/gpt-oss-20b ok" in out and "total=40" in out
-    assert "Gemini gemini-2.5-flash-lite ok" in out and "total=9" in out
+    assert "Gemini gemini-3.5-flash-lite ok" in out and "total=9" in out
     assert len(sent) == 2
 
 
 def test_requests_are_small(calls):
     sent, answers = calls
     answers["groq"] = [GROQ_OK]
-    answers["gemini-2.5-flash-lite"] = [GEMINI_OK]
+    answers["gemini-3.5-flash-lite"] = [GEMINI_OK]
     key_check.main(KEYS)
     groq_body, gemini_body = sent[0][1], sent[1][1]
     assert groq_body["max_completion_tokens"] <= 64
@@ -59,8 +59,11 @@ def test_retired_groq_models_are_not_used():
     assert not key_check.GROQ_MODEL.startswith("llama-3")
 
 
-def test_gemini_falls_back_when_the_model_is_refused(calls, capsys):
+def test_gemini_falls_back_when_the_model_is_refused(calls, capsys, monkeypatch):
     _, answers = calls
+    monkeypatch.setattr(
+        key_check, "GEMINI_MODELS", ["gemini-2.5-flash-lite", "gemini-3.5-flash-lite"]
+    )
     answers["groq"] = [GROQ_OK]
     answers["gemini-2.5-flash-lite"] = [(404, {"error": {"message": "not found"}})]
     answers["gemini-3.5-flash-lite"] = [GEMINI_OK]
@@ -71,7 +74,7 @@ def test_gemini_falls_back_when_the_model_is_refused(calls, capsys):
 def test_bad_key_fails_the_run(calls, capsys):
     _, answers = calls
     answers["groq"] = [(401, {"error": {"message": "Invalid API Key"}})]
-    answers["gemini-2.5-flash-lite"] = [GEMINI_OK]
+    answers["gemini-3.5-flash-lite"] = [GEMINI_OK]
     assert key_check.main(KEYS) == 1
     assert "::error::Groq openai/gpt-oss-20b the key was rejected (401)" in capsys.readouterr().out
 
@@ -79,7 +82,7 @@ def test_bad_key_fails_the_run(calls, capsys):
 def test_rate_limit_is_reported_without_trying_another_model(calls, capsys):
     sent, answers = calls
     answers["groq"] = [GROQ_OK]
-    answers["gemini-2.5-flash-lite"] = [(429, {"error": {"message": "quota"}})]
+    answers["gemini-3.5-flash-lite"] = [(429, {"error": {"message": "quota"}})]
     assert key_check.main(KEYS) == 1
     assert "rate limited (429)" in capsys.readouterr().out
     assert len(sent) == 2
@@ -90,3 +93,28 @@ def test_missing_secret_is_named(calls, capsys):
     answers["groq"] = [GROQ_OK]
     assert key_check.main({"GROQ_API_KEY": "g"}) == 1
     assert "The GEMINI_API_KEY repository secret is missing" in capsys.readouterr().out
+
+
+def test_requests_name_the_client(monkeypatch):
+    seen = {}
+
+    class FakeResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def read(self):
+            return b"{}"
+
+    def fake_urlopen(request, timeout):
+        seen.update(request.headers)
+        return FakeResponse()
+
+    monkeypatch.setattr(key_check.urllib.request, "urlopen", fake_urlopen)
+    key_check.post_json("https://api.example.test", {}, {"Authorization": "Bearer x"})
+    assert seen["User-agent"].startswith("careerpilot-key-check")
+    assert seen["Authorization"] == "Bearer x"

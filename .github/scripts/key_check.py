@@ -13,9 +13,10 @@ Free tier limits checked on November 25, 2026
                             so this check stays at one request a day
 
 The Llama 3.1 and 3.3 models on Groq were shut down on August 16, 2026, which
-is why the check uses gpt-oss-20b. Gemini 2.5 Flash-Lite is still served but
-only to keys that used it before, so the check falls back to the stable
-Gemini 3.5 Flash-Lite when the older model is refused.
+is why the check uses gpt-oss-20b. Gemini 2.5 Flash-Lite answers 404 "no
+longer available to new users" for this key, so the check uses the stable
+Gemini 3.5 Flash-Lite. GEMINI_MODELS can list fallbacks, separated by commas,
+which are tried in order when a model is refused.
 """
 
 from __future__ import annotations
@@ -34,7 +35,7 @@ GROQ_MODEL = os.environ.get("GROQ_MODEL", "").strip() or "openai/gpt-oss-20b"
 GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 GEMINI_MODELS = [
     m.strip()
-    for m in (os.environ.get("GEMINI_MODELS", "") or "gemini-2.5-flash-lite,gemini-3.5-flash-lite").split(",")
+    for m in (os.environ.get("GEMINI_MODELS", "") or "gemini-3.5-flash-lite").split(",")
     if m.strip()
 ]
 
@@ -51,7 +52,13 @@ def post_json(url, body, headers, timeout=60):
     request = urllib.request.Request(
         url,
         data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json", **headers},
+        # Groq sits behind Cloudflare, which refuses Python's default
+        # User-Agent with "error code: 1010", so name the client instead.
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": "careerpilot-key-check/1.0",
+            **headers,
+        },
         method="POST",
     )
     try:
