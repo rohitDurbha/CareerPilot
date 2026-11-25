@@ -21,10 +21,11 @@ The goal right now is a working hosted link. Items 4 to 6 get a demo online in m
   - [x] b. Stop exposing the LiveKit secret to the browser. Read the key and secret in `meet` from server-only variables instead of `NEXT_PUBLIC_LIVEKIT_API_SECRET` and `NEXT_PUBLIC_LIVEKIT_API_KEY`, and add `meet/.env.example`.
   - [x] c. Make the Flask backend production ready. Serve it with gunicorn on the `PORT` variable, lock CORS to a configured frontend origin, and add tests for both.
 - [ ] 5. Deploy a public demo in mock mode.
-  - [ ] a. Add a Dockerfile for a Hugging Face Docker Space that runs the backend with `CAREERPILOT_MOCK=1` on port 7860, check that the image builds and answers `/` locally, and add a workflow that pushes it to the Space with the `HF_TOKEN` repository secret.
-  - [ ] b. Serve the dashboard and search pages from the `meet` Next.js app so one Vercel project hosts the whole frontend, pointed at the hosted backend, and deploy it from a workflow with the `VERCEL_TOKEN` repository secret.
-  - [ ] c. Add a check after each deploy that loads the dashboard and calls the backend, then put the live link at the top of the README and of this roadmap.
-  - [ ] d. Add a workflow that sends one test prompt with the `GROQ_API_KEY` and `GEMINI_API_KEY` repository secrets, so a key that stops working shows up as a failed run.
+  - [x] a. Host the backend for free. The Hugging Face Docker Space plan was dropped, because on November 24, 2026 Hugging Face answered 402 Payment Required for free Docker Spaces on the safe-stride project. The backend now runs in mock mode as a Vercel Python function at `/api` (`api/index.py`, with `Project/prefix.py` stripping the prefix and the root `requirements.txt` listing its packages), checked locally with the dashboard loading all three sample jobs through `/api`.
+  - [x] b. Serve the search and dashboard pages from the same Vercel project. `scripts/build-site.mjs` copies them into `site/` and points `settings.js` at `/api`, so the pages and the backend share one address and need no CORS. Moving the pages into the `meet` Next.js app is left to item 10.
+  - [ ] c. Deploy from `.github/workflows/deploy.yml` with the `VERCEL_TOKEN` secret on every push, then run `.github/scripts/live_check.py` against the live address and put the live link at the top of the README and of this roadmap. The workflow and the check are in place, and the first run on November 25, 2026 passed its tests but stopped because `VERCEL_TOKEN` is not saved in this repository yet.
+  - [x] d. Add a workflow that sends one test prompt with the `GROQ_API_KEY` and `GEMINI_API_KEY` repository secrets, so a key that stops working shows up as a failed run. `.github/workflows/key-check.yml` runs daily with `.github/scripts/key_check.py`, using Groq `openai/gpt-oss-20b` (the Llama 3.1 and 3.3 models were shut down on August 16, 2026) and Gemini 2.5 Flash-Lite with a fallback to the stable Gemini 3.5 Flash-Lite.
+  - [ ] e. Host the interview room from `meet` so the dashboard's mock interview button stops pointing at `localhost:3000`, and pass its address to the build as `CAREERPILOT_MEET_URL`.
 ### Bugs found on the live site
 
 Every session opens the live link first, adds anything broken here, and fixes these before the numbered items.
@@ -43,7 +44,8 @@ Every session opens the live link first, adds anything broken here, and fixes th
 - Copy `Project/.env.example` to `Project/.env` and fill in the MongoDB connection string and the two Activepieces webhook URLs. The old webhook URLs were removed from the code, so either reuse them from your Activepieces flows or create fresh webhooks.
 - Rotate the MongoDB Atlas password for the `cs156` user. It used to be hardcoded in `Project/backend.py` and still sits in git history even though item 2 moved it into an environment variable.
 - Done. `GROQ_API_KEY` and `GEMINI_API_KEY` are saved as repository secrets.
-- Add `VERCEL_TOKEN` and `HF_TOKEN` as repository secrets for item 5. The same tokens already saved in safe-stride work here too.
+- Add `VERCEL_TOKEN` as a repository secret in CareerPilot (Settings, Secrets and variables, Actions). The token already saved in safe-stride works here too. It is the only thing between the finished deploy workflow and a live link. `HF_TOKEN` is no longer needed, because Hugging Face now charges for Docker Spaces.
+- Check the Gemini free tier limits for your key in the Google AI Studio rate limit page, since Google only publishes them there. The daily key check sends one request a day, so it stays well inside any limit.
 - Add the connection string of the new CareerPilot Atlas cluster as the `MONGO_URI` repository secret for item 6.
 - If the LiveKit API secret was ever stored under `NEXT_PUBLIC_LIVEKIT_API_SECRET` on a host such as Vercel, rotate it in the LiveKit Cloud dashboard and set the new key and secret as `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` instead.
 - LiveKit Cloud project keys, a Gemini or Groq key, an Activepieces account and an Apify free account.

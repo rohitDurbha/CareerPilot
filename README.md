@@ -82,6 +82,19 @@ PORT=7860 CAREERPILOT_ALLOWED_ORIGINS=https://your-frontend.vercel.app gunicorn 
 
 Browsers may only call the backend from the origins listed in `CAREERPILOT_ALLOWED_ORIGINS`, separated by commas. When it is not set, only pages on `localhost` or `127.0.0.1` and pages opened straight from disk are allowed, which keeps local work unchanged.
 
+**Hosted demo**
+
+The demo runs on one free Vercel project. `.github/workflows/deploy.yml` tests the app, builds the two pages into `site/` with `scripts/build-site.mjs`, deploys the backend in mock mode as a Python function under `/api`, and then runs `.github/scripts/live_check.py` against the live address. It needs the `VERCEL_TOKEN` repository secret.
+
+**LLM keys and free tier limits**
+
+`.github/workflows/key-check.yml` sends one short prompt a day to each provider with the `GROQ_API_KEY` and `GEMINI_API_KEY` secrets, and logs the tokens each one counted. Both keys are on free tiers.
+
+| Provider | Model | Free tier limits (checked November 25, 2026) |
+| --- | --- | --- |
+| Groq | `openai/gpt-oss-20b` | 30 requests and 8K tokens a minute, 1K requests and 200K tokens a day |
+| Gemini | `gemini-2.5-flash-lite`, falling back to `gemini-3.5-flash-lite` | Shown only in the Google AI Studio dashboard for each key |
+
 **Backend and interview room addresses**
 
 The pages default to the local servers, so nothing needs changing for local work. When the backend or the interview room runs somewhere else, change the two values at the top of `Project/settings.js`. `apiUrl` is where `index.html` and `dashboard.html` send their requests and `meetUrl` is where the dashboard opens the interview room. The interview room reaches the backend through `NEXT_PUBLIC_CAREERPILOT_API_URL`, which also falls back to `http://localhost:5001` when it is not set.
