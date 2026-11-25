@@ -15,6 +15,15 @@ ENV_FILE = Path(__file__).resolve().parent / ".env"
 DEFAULT_MONGO_URI = "mongodb://localhost:27017"
 DEFAULT_MONGO_DB = "scrapped_jobs"
 DEFAULT_MONGO_COLLECTION = "Careerpilot"
+DEFAULT_PORT = 5001
+
+# Origins allowed to call the backend when CAREERPILOT_ALLOWED_ORIGINS is not
+# set. Only pages served from this machine, or opened straight from disk (the
+# browser sends the origin "null" for those), may call it.
+LOCAL_ORIGINS = (
+    r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+    "null",
+)
 
 
 class MissingSettingError(RuntimeError):
@@ -41,6 +50,8 @@ class Settings:
     job_search_webhook: str
     resume_match_webhook: str
     mock_mode: bool = False
+    allowed_origins: tuple = LOCAL_ORIGINS
+    port: int = DEFAULT_PORT
 
     def require(self, field, env_name):
         """Return a setting or raise a clear error naming the variable to set."""
@@ -50,6 +61,27 @@ class Settings:
                 f"{env_name} is not set. Add it to Project/.env or the environment."
             )
         return value
+
+
+def _read_origins(name):
+    """Split a comma separated origin list, dropping blanks and trailing slashes."""
+    origins = tuple(
+        part.strip().rstrip("/") for part in _read(name).split(",") if part.strip()
+    )
+    return origins or LOCAL_ORIGINS
+
+
+def _read_port(name):
+    value = _read(name)
+    if not value:
+        return DEFAULT_PORT
+    try:
+        port = int(value)
+    except ValueError:
+        raise MissingSettingError(f"{name} must be a port number, not {value!r}.")
+    if not 0 < port < 65536:
+        raise MissingSettingError(f"{name} must be between 1 and 65535, not {port}.")
+    return port
 
 
 def load_settings(env_file=None):
@@ -64,4 +96,6 @@ def load_settings(env_file=None):
         job_search_webhook=_read("ACTIVEPIECES_JOB_SEARCH_WEBHOOK"),
         resume_match_webhook=_read("ACTIVEPIECES_RESUME_MATCH_WEBHOOK"),
         mock_mode=_read_flag("CAREERPILOT_MOCK"),
+        allowed_origins=_read_origins("CAREERPILOT_ALLOWED_ORIGINS"),
+        port=_read_port("PORT"),
     )

@@ -16,10 +16,10 @@ Each session finishes a whole item when it can, and items stay split into steps 
 
 The goal right now is a working hosted link. Items 4 to 6 get a demo online in mock mode first and then switch on the real services. The bigger rebuilds come after that.
 
-- [ ] 4. Make the app hostable.
+- [x] 4. Make the app hostable.
   - [x] a. Replace every hardcoded `localhost:5001` call in `index.html`, `dashboard.html` and the interview room with one backend address setting, and replace the hardcoded `localhost:3000` interview room link with a second setting, both defaulting to the local addresses.
   - [x] b. Stop exposing the LiveKit secret to the browser. Read the key and secret in `meet` from server-only variables instead of `NEXT_PUBLIC_LIVEKIT_API_SECRET` and `NEXT_PUBLIC_LIVEKIT_API_KEY`, and add `meet/.env.example`.
-  - [ ] c. Make the Flask backend production ready. Serve it with gunicorn on the `PORT` variable, lock CORS to a configured frontend origin, and add tests for both.
+  - [x] c. Make the Flask backend production ready. Serve it with gunicorn on the `PORT` variable, lock CORS to a configured frontend origin, and add tests for both.
 - [ ] 5. Deploy a public demo in mock mode.
   - [ ] a. Add a Dockerfile for a Hugging Face Docker Space that runs the backend with `CAREERPILOT_MOCK=1` on port 7860, check that the image builds and answers `/` locally, and add a workflow that pushes it to the Space with the `HF_TOKEN` repository secret.
   - [ ] b. Serve the dashboard and search pages from the `meet` Next.js app so one Vercel project hosts the whole frontend, pointed at the hosted backend, and deploy it from a workflow with the `VERCEL_TOKEN` repository secret.

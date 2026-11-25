@@ -55,7 +55,9 @@ def resume_match_webhook():
 # --- Flask and CORS initialization ---
 
 app = Flask(__name__)
-CORS(app)
+# Only the configured frontend origins may call the API from a browser.
+# Set CAREERPILOT_ALLOWED_ORIGINS on the host, for example to the Vercel URL.
+CORS(app, origins=list(settings.allowed_origins))
 
 
 @app.errorhandler(MissingSettingError)
@@ -271,4 +273,5 @@ def latest_jobs():
         return jsonify({"error": "Failed to fetch latest jobs", "details": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5001, debug=True)
+    # Local development server. Hosts run gunicorn with Project/gunicorn.conf.py.
+    app.run(host="0.0.0.0", port=settings.port, debug=True)

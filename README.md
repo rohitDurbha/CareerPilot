@@ -71,6 +71,17 @@ Here is what each part of the app does while mock mode is on.
 
 Every mock response carries `"mock": true` so it is easy to tell sample data from real results. To change the sample jobs or scores, edit the two JSON files in `Project/mock_data` and keep their `jobId` values matching.
 
+**Running the backend on a host**
+
+Hosts run the backend with gunicorn, which reads its settings from `Project/gunicorn.conf.py`. It listens on the `PORT` variable that the host provides and falls back to 5001 when that is not set. It keeps a single worker with a few threads, because the interview agent processes are tracked inside that one worker.
+
+```bash
+cd Project
+PORT=7860 CAREERPILOT_ALLOWED_ORIGINS=https://your-frontend.vercel.app gunicorn backend:app
+```
+
+Browsers may only call the backend from the origins listed in `CAREERPILOT_ALLOWED_ORIGINS`, separated by commas. When it is not set, only pages on `localhost` or `127.0.0.1` and pages opened straight from disk are allowed, which keeps local work unchanged.
+
 **Backend and interview room addresses**
 
 The pages default to the local servers, so nothing needs changing for local work. When the backend or the interview room runs somewhere else, change the two values at the top of `Project/settings.js`. `apiUrl` is where `index.html` and `dashboard.html` send their requests and `meetUrl` is where the dashboard opens the interview room. The interview room reaches the backend through `NEXT_PUBLIC_CAREERPILOT_API_URL`, which also falls back to `http://localhost:5001` when it is not set.
