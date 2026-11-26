@@ -1,0 +1,6 @@
+# Never upload local secrets or build output from this machine.
+.env
+.env.*
+!.env.example
+node_modules/
+.next/

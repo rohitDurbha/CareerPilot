@@ -1,8 +1,10 @@
 """Check that the hosted CareerPilot demo serves its pages and its backend.
 
-Run it with the site address, for example
+Run it with the site address, and optionally the interview room address,
+for example
 
-    python .github/scripts/live_check.py https://careerpilot-demo.vercel.app
+    python .github/scripts/live_check.py https://careerpilot-demo.vercel.app \
+        --meet https://careerpilot-meet.vercel.app
 
 Every request is read only, so it is safe to run at any time. The script prints
 one line per check, retries a few times while a fresh deploy warms up, and
@@ -46,17 +48,43 @@ CHECKS = [
 ]
 
 
-def run(site, attempts=5, pause=10):
+def health_ok(body):
+    try:
+        return json.loads(body).get("ok") is True
+    except (ValueError, AttributeError):
+        return False
+
+
+MEET_CHECKS = [
+    ("room home", "/", lambda s, b: s == 200),
+    ("room health", "/api/health", lambda s, b: s == 200 and health_ok(b)),
+    ("interview room", "/rooms/test-room", lambda s, b: s == 200),
+]
+
+
+def plan(site, meet=None):
+    """List (name, url, check) for the site and, when given, the interview room."""
     site = site.rstrip("/")
+    checks = [(name, site + path, passes) for name, path, passes in CHECKS]
+    if meet:
+        meet = meet.rstrip("/")
+        checks.append(
+            ("room link", site + "/settings.js", lambda s, b: s == 200 and meet in b)
+        )
+        checks += [(name, meet + path, passes) for name, path, passes in MEET_CHECKS]
+    return checks
+
+
+def run(site, meet=None, attempts=5, pause=10, fetch=fetch):
     failed = []
-    for name, path, passes in CHECKS:
+    for name, url, passes in plan(site, meet):
         for attempt in range(1, attempts + 1):
-            status, body = fetch(site + path)
+            status, body = fetch(url)
             if passes(status, body):
-                print(f"ok    {name:16} {path} answered {status}")
+                print(f"ok    {name:16} {url} answered {status}")
                 break
             if attempt == attempts:
-                print(f"FAIL  {name:16} {path} answered {status}: {body[:200]!r}")
+                print(f"FAIL  {name:16} {url} answered {status}: {body[:200]!r}")
                 failed.append(name)
             else:
                 time.sleep(pause)
@@ -64,6 +92,11 @@ def run(site, attempts=5, pause=10):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit("usage: live_check.py https://site.example")
-    sys.exit(1 if run(sys.argv[1]) else 0)
+    args = sys.argv[1:]
+    meet = None
+    if len(args) == 3 and args[1] == "--meet":
+        meet = args[2]
+        args = args[:1]
+    if len(args) != 1:
+        sys.exit("usage: live_check.py https://site.example [--meet https://room.example]")
+    sys.exit(1 if run(args[0], meet) else 0)

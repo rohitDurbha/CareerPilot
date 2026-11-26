@@ -84,7 +84,9 @@ Browsers may only call the backend from the origins listed in `CAREERPILOT_ALLOW
 
 **Hosted demo**
 
-The demo runs on one free Vercel project. `.github/workflows/deploy.yml` tests the app, builds the two pages into `site/` with `scripts/build-site.mjs`, deploys the backend in mock mode as a Python function under `/api`, and then runs `.github/scripts/live_check.py` against the live address. It needs the `VERCEL_TOKEN` repository secret.
+The demo runs on two free Vercel projects, both published by `.github/workflows/deploy.yml` on every push to `main`. The workflow runs the backend tests and the interview room's typecheck and tests, then publishes `careerpilot-demo` (the two pages built into `site/` by `scripts/build-site.mjs`, with the backend in mock mode as a Python function under `/api`) and `careerpilot-meet` (the Next.js interview room in `meet/`). It publishes the pages once more so the dashboard's mock interview button opens the hosted room and the backend accepts calls from it, and finally runs `.github/scripts/live_check.py` against both addresses. Each project is deployed by `.github/scripts/vercel_deploy.sh`, which prints the stable address found by `.github/scripts/production_url.py`.
+
+It needs the `VERCEL_TOKEN` repository secret. The `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` secrets are optional. Without them the room still loads, `/api/health` lists what is missing, and joining shows that message instead of failing silently.
 
 **LLM keys and free tier limits**
 

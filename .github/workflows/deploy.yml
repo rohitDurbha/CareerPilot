@@ -1,9 +1,11 @@
 name: Deploy
 
-# Publishes the CareerPilot demo to one free Vercel project on every push to
-# main. The search and dashboard pages are static files and the Flask backend
-# runs in mock mode as a Python function under /api, so no other host, account
-# or payment method is needed.
+# Publishes the CareerPilot demo to two free Vercel projects on every push to
+# main. careerpilot-demo serves the search and dashboard pages as static files
+# with the Flask backend in mock mode as a Python function under /api.
+# careerpilot-meet serves the Next.js interview room from meet/. The pages are
+# published once more after the room so they link to its address, and the
+# backend accepts calls from it. No other host or payment method is needed.
 
 on:
   push:
@@ -20,13 +22,14 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  VERCEL_PROJECT: careerpilot-demo
+  SITE_PROJECT: careerpilot-demo
+  MEET_PROJECT: careerpilot-meet
 
 jobs:
   deploy:
     name: Test and deploy to Vercel
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
     steps:
@@ -40,10 +43,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: meet/package-lock.json
       - name: Install backend dependencies
         run: pip install -r Project/requirements.txt pytest
-      - name: Run tests
+      - name: Run backend tests
         run: python -m pytest -q
+      - name: Install interview room dependencies
+        working-directory: meet
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck and test the interview room
+        working-directory: meet
+        run: |
+          npx tsc --noEmit
+          npm test
 
       - name: Check for the Vercel token
         run: |
@@ -51,33 +64,40 @@ jobs:
             echo "::error::The VERCEL_TOKEN repository secret is missing"
             exit 1
           fi
-      - name: Link the Vercel project
-        run: |
-          # Creating the project fails harmlessly once it exists. Linking by
-          # name keeps this deploy away from any other Vercel project.
-          npx --yes vercel@63.1.0 project add "$VERCEL_PROJECT" --token "$VERCEL_TOKEN" || true
-          npx --yes vercel@63.1.0 link --yes --project "$VERCEL_PROJECT" --token "$VERCEL_TOKEN"
-      - name: Publish to Vercel
-        run: |
-          for attempt in 1 2 3; do
-            if npx --yes vercel@63.1.0 deploy --prod --yes --token "$VERCEL_TOKEN" \
-                --env CAREERPILOT_MOCK=1 > deploy-url.txt; then
-              break
-            fi
-            if [ "$attempt" = 3 ]; then exit 1; fi
-            sleep 15
-          done
-          echo "Deployment $(tail -n 1 deploy-url.txt)"
-      - name: Find the production address
+      - name: Publish the pages and the backend
         id: site
         run: |
-          host=$(tail -n 1 deploy-url.txt | sed -E 's#^https?://##; s#/.*$##')
-          curl --silent --fail -H "Authorization: Bearer $VERCEL_TOKEN" \
-            "https://api.vercel.com/v13/deployments/$host" -o deployment.json
-          # The shortest vercel.app alias is the stable production address.
-          site=$(python -c "import json; a=[x for x in json.load(open('deployment.json')).get('alias') or [] if x.endswith('.vercel.app')]; print('https://'+min(a,key=len) if a else '')")
-          site=${site:-https://$host}
+          site=$(.github/scripts/vercel_deploy.sh . "$SITE_PROJECT" --env CAREERPILOT_MOCK=1 | tail -n 1)
           echo "url=$site" >> "$GITHUB_OUTPUT"
-          echo "Live at $site" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Pages at $site" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish the interview room
+        id: meet
+        env:
+          LIVEKIT_URL: ${{ secrets.LIVEKIT_URL }}
+          LIVEKIT_API_KEY: ${{ secrets.LIVEKIT_API_KEY }}
+          LIVEKIT_API_SECRET: ${{ secrets.LIVEKIT_API_SECRET }}
+        run: |
+          flags=(--build-env "NEXT_PUBLIC_CAREERPILOT_API_URL=${{ steps.site.outputs.url }}/api")
+          # The room still loads without LiveKit keys and explains what is
+          # missing when someone tries to join.
+          for name in LIVEKIT_URL LIVEKIT_API_KEY LIVEKIT_API_SECRET; do
+            if [ -n "${!name}" ]; then
+              flags+=(--env "$name=${!name}")
+            else
+              echo "::warning::$name is not set, so the interview room cannot sign LiveKit tokens yet"
+            fi
+          done
+          meet=$(.github/scripts/vercel_deploy.sh meet "$MEET_PROJECT" "${flags[@]}" | tail -n 1)
+          echo "url=$meet" >> "$GITHUB_OUTPUT"
+          echo "Interview room at $meet" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Point the pages at the interview room
+        run: |
+          meet="${{ steps.meet.outputs.url }}"
+          .github/scripts/vercel_deploy.sh . "$SITE_PROJECT" \
+            --env CAREERPILOT_MOCK=1 \
+            --env "CAREERPILOT_ALLOWED_ORIGINS=$meet" \
+            --build-env "CAREERPILOT_MEET_URL=$meet"
       - name: Check the live site
-        run: python .github/scripts/live_check.py "${{ steps.site.outputs.url }}"
+        run: |
+          python .github/scripts/live_check.py "${{ steps.site.outputs.url }}" \
+            --meet "${{ steps.meet.outputs.url }}"
