@@ -30,6 +30,7 @@ import { useRouter } from 'next/navigation';
 import { useSetupE2EE } from '@/lib/useSetupE2EE';
 import { useLowCPUOptimizer } from '@/lib/usePerfomanceOptimiser';
 import { careerpilotApiUrl } from '@/lib/careerpilotApi';
+import { parseConnectionDetails } from '@/lib/connectionDetails';
 
 const CONN_DETAILS_ENDPOINT =
   process.env.NEXT_PUBLIC_CONN_DETAILS_ENDPOINT ?? '/api/connection-details';
@@ -55,18 +56,26 @@ export function PageClientImpl(props: {
     undefined,
   );
 
+  const [joinError, setJoinError] = React.useState<string | undefined>(undefined);
+
   const handlePreJoinSubmit = React.useCallback(async (values: LocalUserChoices) => {
-    setPreJoinChoices(values);
-    
+    setJoinError(undefined);
     const url = new URL(CONN_DETAILS_ENDPOINT, window.location.origin);
     url.searchParams.append('roomName', props.roomName);
     url.searchParams.append('participantName', values.username);
     if (props.region) {
       url.searchParams.append('region', props.region);
     }
-    const connectionDetailsResp = await fetch(url.toString());
-    const connectionDetailsData = await connectionDetailsResp.json();
-    setConnectionDetails(connectionDetailsData);
+    try {
+      const connectionDetailsResp = await fetch(url.toString());
+      const connectionDetailsData = await connectionDetailsResp.json().catch(() => null);
+      const details = parseConnectionDetails(connectionDetailsResp.status, connectionDetailsData);
+      setPreJoinChoices(values);
+      setConnectionDetails(details);
+    } catch (error) {
+      console.error(error);
+      setJoinError(error instanceof Error ? error.message : String(error));
+    }
   }, []);
   const handlePreJoinError = React.useCallback((e: any) => console.error(e), []);
 
@@ -74,6 +83,11 @@ export function PageClientImpl(props: {
     <main data-lk-theme="default" style={{ height: '100%' }}>
       {connectionDetails === undefined || preJoinChoices === undefined ? (
         <div style={{ display: 'grid', placeItems: 'center', height: '100%' }}>
+          {joinError && (
+            <p role="alert" style={{ maxWidth: '32rem', textAlign: 'center', color: '#ffb4b4' }}>
+              Could not join the interview room. {joinError}
+            </p>
+          )}
           <PreJoin
             defaults={preJoinDefaults}
             onSubmit={handlePreJoinSubmit}
