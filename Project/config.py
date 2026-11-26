@@ -99,3 +99,35 @@ def load_settings(env_file=None):
         allowed_origins=_read_origins("CAREERPILOT_ALLOWED_ORIGINS"),
         port=_read_port("PORT"),
     )
+
+
+# Services the real (not mock) backend needs, with the variable that sets each.
+SERVICES = (
+    ("mongodb", "MONGO_URI"),
+    ("job_search_webhook", "ACTIVEPIECES_JOB_SEARCH_WEBHOOK"),
+    ("resume_match_webhook", "ACTIVEPIECES_RESUME_MATCH_WEBHOOK"),
+)
+
+
+def service_status(settings):
+    """Say which services are configured, without revealing any of their values.
+
+    MongoDB only counts as configured when MONGO_URI points somewhere other than
+    the local default, since a hosted backend has no MongoDB on localhost. In
+    mock mode no service is needed, so the backend is always ready.
+    """
+    configured = {
+        "mongodb": settings.mongo_uri != DEFAULT_MONGO_URI,
+        "job_search_webhook": bool(settings.job_search_webhook),
+        "resume_match_webhook": bool(settings.resume_match_webhook),
+    }
+    needed = not settings.mock_mode
+    missing = [env for name, env in SERVICES if needed and not configured[name]]
+    return {
+        "mode": "mock" if settings.mock_mode else "live",
+        "ready": not missing,
+        "missing": missing,
+        "services": {
+            name: {"configured": configured[name], "needed": needed} for name, _ in SERVICES
+        },
+    }

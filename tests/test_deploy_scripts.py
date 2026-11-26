@@ -57,6 +57,7 @@ def _site_answers(meet_url=MEET):
         SITE + "/settings.js": (200, settings),
         SITE + "/api/": (200, "Backend is running"),
         SITE + "/api/latest_jobs": (200, '{"count": 1, "jobs": [{}]}'),
+        SITE + "/api/health": (200, '{"mode": "mock", "ready": true, "missing": []}'),
         MEET + "/": (200, "<html>"),
         MEET + "/api/health": (200, '{"ok": true, "livekitConfigured": false}'),
         MEET + "/rooms/test-room": (200, "<html>"),
@@ -112,3 +113,10 @@ def test_interview_room_uploads_no_local_secrets():
     settings = json.loads((ROOT / "meet" / "vercel.json").read_text(encoding="utf-8"))
     assert settings["framework"] == "nextjs"
     assert settings["installCommand"].startswith("npm ci")
+
+
+def test_live_check_fails_when_the_backend_is_missing_a_service():
+    answers = _site_answers()
+    answers[SITE + "/api/health"] = (200, '{"mode": "live", "ready": false, "missing": ["MONGO_URI"]}')
+    failed = live_check.run(SITE, MEET, attempts=1, pause=0, fetch=answers.__getitem__)
+    assert failed == ["backend health"]

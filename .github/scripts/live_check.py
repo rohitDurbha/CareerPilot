@@ -39,12 +39,20 @@ def jobs_listed(body):
     return data.get("count", 0) > 0 and len(data.get("jobs") or []) == data["count"]
 
 
+def backend_ready(body):
+    try:
+        return json.loads(body).get("ready") is True
+    except (ValueError, AttributeError):
+        return False
+
+
 CHECKS = [
     ("search page", "/", lambda s, b: s == 200 and "settings.js" in b),
     ("dashboard page", "/dashboard.html", lambda s, b: s == 200 and "latest_jobs" in b),
     ("hosted settings", "/settings.js", lambda s, b: s == 200 and '"apiUrl":"/api"' in b),
     ("backend", "/api/", lambda s, b: s == 200 and "Backend is running" in b),
     ("sample jobs", "/api/latest_jobs", lambda s, b: s == 200 and jobs_listed(b)),
+    ("backend health", "/api/health", lambda s, b: s == 200 and backend_ready(b)),
 ]
 
 

@@ -36,6 +36,9 @@ Every session opens the live link first, adds anything broken here, and fixes th
 - None logged yet, because the site is not live.
 
 - [ ] 6. Switch on the real services in the hosted app. Document the MongoDB Atlas and Activepieces settings for the host, add a health check that reports which services are configured, and turn mock mode off once the keys are in place.
+  - [x] a. Add `GET /health`, which reports mock or live mode, whether MongoDB and both Activepieces webhooks are configured, and the variables live mode still needs, without ever showing a value. The deploy live check reads it at `/api/health` and fails when the backend is not ready.
+  - [ ] b. Pass the `MONGO_URI`, `ACTIVEPIECES_JOB_SEARCH_WEBHOOK` and `ACTIVEPIECES_RESUME_MATCH_WEBHOOK` repository secrets to the hosted backend from the deploy workflow, and document each one for the host in the README.
+  - [ ] c. Turn mock mode off in the deploy only when all three secrets are present, and keep the demo in mock mode otherwise.
 - [ ] 7. Replace the paid Tavus and Hedra video avatars with a free mock interview stack. LiveKit Cloud free tier plus the Gemini Live API free tier for real-time voice, or Groq with faster-whisper and Piper for a fully open setup. Use the open-source TalkingHead three.js avatar for a lip-synced face in the browser.
 - [ ] 8. Replace the LinkedIn crawler, which breaks LinkedIn's terms, with public Greenhouse, Lever and Ashby job board APIs.
 - [ ] 9. Keep resume scoring on the Groq free tier and add a clear score breakdown.

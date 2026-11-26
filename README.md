@@ -88,6 +88,8 @@ The demo runs on two free Vercel projects, both published by `.github/workflows/
 
 It needs the `VERCEL_TOKEN` repository secret. The `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` secrets are optional. Without them the room still loads, `/api/health` lists what is missing, and joining shows that message instead of failing silently.
 
+`GET /health` (or `/api/health` on the hosted demo) reports whether the backend is in mock or live mode, which of MongoDB and the two Activepieces webhooks are configured, and `missing`, the variables live mode still needs. It only answers yes or no for each service and never shows a connection string or webhook address. MongoDB counts as configured once `MONGO_URI` points somewhere other than the local default. The live check fails when `ready` is false.
+
 **LLM keys and free tier limits**
 
 `.github/workflows/key-check.yml` sends one short prompt a day to each provider with the `GROQ_API_KEY` and `GEMINI_API_KEY` secrets, and logs the tokens each one counted. Both keys are on free tiers.

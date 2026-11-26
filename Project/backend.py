@@ -11,7 +11,7 @@ from PyPDF2 import PdfReader
 from pymongo import MongoClient
 
 import mock_workflows
-from config import MissingSettingError, load_settings
+from config import MissingSettingError, load_settings, service_status
 
 # --- Configuration and clients ---
 
@@ -109,6 +109,14 @@ def home():
     if settings.mock_mode:
         return "Backend is running in mock mode."
     return "Backend is running."
+
+
+@app.route("/health", methods=["GET"])
+def health():
+    """Report the mode and which services are configured, never their values."""
+    response = jsonify(service_status(settings))
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 @app.route("/upload_resume", methods=["POST"])
 def upload_resume():
