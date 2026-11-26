@@ -37,8 +37,9 @@ Every session opens the live link first, adds anything broken here, and fixes th
 
 - [ ] 6. Switch on the real services in the hosted app. Document the MongoDB Atlas and Activepieces settings for the host, add a health check that reports which services are configured, and turn mock mode off once the keys are in place.
   - [x] a. Add `GET /health`, which reports mock or live mode, whether MongoDB and both Activepieces webhooks are configured, and the variables live mode still needs, without ever showing a value. The deploy live check reads it at `/api/health` and fails when the backend is not ready.
-  - [ ] b. Pass the `MONGO_URI`, `ACTIVEPIECES_JOB_SEARCH_WEBHOOK` and `ACTIVEPIECES_RESUME_MATCH_WEBHOOK` repository secrets to the hosted backend from the deploy workflow, and document each one for the host in the README.
-  - [ ] c. Turn mock mode off in the deploy only when all three secrets are present, and keep the demo in mock mode otherwise.
+  - [x] b. Pass the `MONGO_URI`, `ACTIVEPIECES_JOB_SEARCH_WEBHOOK` and `ACTIVEPIECES_RESUME_MATCH_WEBHOOK` repository secrets to the hosted backend from the deploy workflow, and document each one for the host in the README. `.github/scripts/backend_flags.sh` builds the deploy flags so values with spaces or symbols stay intact.
+  - [x] c. Turn mock mode off in the deploy only when all three secrets are present, and keep the demo in mock mode otherwise.
+  - [ ] d. Once the three secrets are saved and the site runs in live mode, confirm the live check passes. Its sample jobs check expects at least one job, so the Atlas collection needs a first job search run before that check can pass in live mode.
 - [ ] 7. Replace the paid Tavus and Hedra video avatars with a free mock interview stack. LiveKit Cloud free tier plus the Gemini Live API free tier for real-time voice, or Groq with faster-whisper and Piper for a fully open setup. Use the open-source TalkingHead three.js avatar for a lip-synced face in the browser.
 - [ ] 8. Replace the LinkedIn crawler, which breaks LinkedIn's terms, with public Greenhouse, Lever and Ashby job board APIs.
 - [ ] 9. Keep resume scoring on the Groq free tier and add a clear score breakdown.
@@ -52,6 +53,6 @@ Every session opens the live link first, adds anything broken here, and fixes th
 - Done. `GROQ_API_KEY` and `GEMINI_API_KEY` are saved as repository secrets.
 - Add `VERCEL_TOKEN` as a repository secret in CareerPilot (Settings, Secrets and variables, Actions). The token already saved in safe-stride works here too. It is the only thing between the finished deploy workflow and a live link. `HF_TOKEN` is no longer needed, because Hugging Face now charges for Docker Spaces.
 - Check the Gemini free tier limits for your key in the Google AI Studio rate limit page, since Google only publishes them there. The daily key check sends one request a day, so it stays well inside any limit.
-- Add the connection string of the new CareerPilot Atlas cluster as the `MONGO_URI` repository secret for item 6.
+- Add the connection string of the new CareerPilot Atlas cluster as the `MONGO_URI` repository secret, and the two Activepieces webhook URLs as `ACTIVEPIECES_JOB_SEARCH_WEBHOOK` and `ACTIVEPIECES_RESUME_MATCH_WEBHOOK`. The hosted backend switches from mock to live mode only once all three are saved. In Atlas, allow network access from `0.0.0.0/0`, since Vercel has no fixed address.
 - If the LiveKit API secret was ever stored under `NEXT_PUBLIC_LIVEKIT_API_SECRET` on a host such as Vercel, rotate it in the LiveKit Cloud dashboard and set the new key and secret as `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` instead.
 - LiveKit Cloud project keys, a Gemini or Groq key, an Activepieces account and an Apify free account. To let people join the hosted interview room, save the LiveKit values as the `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` repository secrets. The room deploys without them but cannot sign tokens.

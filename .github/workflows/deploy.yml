@@ -32,6 +32,10 @@ jobs:
     timeout-minutes: 30
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      # The backend leaves mock mode only when all three of these are saved.
+      MONGO_URI: ${{ secrets.MONGO_URI }}
+      ACTIVEPIECES_JOB_SEARCH_WEBHOOK: ${{ secrets.ACTIVEPIECES_JOB_SEARCH_WEBHOOK }}
+      ACTIVEPIECES_RESUME_MATCH_WEBHOOK: ${{ secrets.ACTIVEPIECES_RESUME_MATCH_WEBHOOK }}
     steps:
       - uses: actions/checkout@v4
 
@@ -67,9 +71,10 @@ jobs:
       - name: Publish the pages and the backend
         id: site
         run: |
-          site=$(.github/scripts/vercel_deploy.sh . "$SITE_PROJECT" --env CAREERPILOT_MOCK=1 | tail -n 1)
+          source .github/scripts/backend_flags.sh
+          site=$(.github/scripts/vercel_deploy.sh . "$SITE_PROJECT" "${backend_flags[@]}" | tail -n 1)
           echo "url=$site" >> "$GITHUB_OUTPUT"
-          echo "Pages at $site" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Pages at $site with the backend in $backend_mode mode" | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Publish the interview room
         id: meet
         env:
@@ -93,8 +98,8 @@ jobs:
       - name: Point the pages at the interview room
         run: |
           meet="${{ steps.meet.outputs.url }}"
-          .github/scripts/vercel_deploy.sh . "$SITE_PROJECT" \
-            --env CAREERPILOT_MOCK=1 \
+          source .github/scripts/backend_flags.sh
+          .github/scripts/vercel_deploy.sh . "$SITE_PROJECT" "${backend_flags[@]}" \
             --env "CAREERPILOT_ALLOWED_ORIGINS=$meet" \
             --build-env "CAREERPILOT_MEET_URL=$meet"
       - name: Check the live site

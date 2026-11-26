@@ -120,3 +120,59 @@ def test_live_check_fails_when_the_backend_is_missing_a_service():
     answers[SITE + "/api/health"] = (200, '{"mode": "live", "ready": false, "missing": ["MONGO_URI"]}')
     failed = live_check.run(SITE, MEET, attempts=1, pause=0, fetch=answers.__getitem__)
     assert failed == ["backend health"]
+
+
+def _backend_flags(env):
+    import subprocess
+
+    script = (
+        f'source "{ROOT / ".github" / "scripts" / "backend_flags.sh"}"; '
+        'printf "%s\\n" "$backend_mode" "${backend_flags[@]}"'
+    )
+    lines = subprocess.run(
+        ["bash", "-c", script],
+        check=True,
+        capture_output=True,
+        text=True,
+        env={"PATH": "/usr/bin:/bin", **env},
+    ).stdout.splitlines()
+    return lines[0], lines[1:]
+
+
+LIVE_SECRETS = {
+    "MONGO_URI": "mongodb+srv://u:p a$s@cluster.example.net/?w=majority",
+    "ACTIVEPIECES_JOB_SEARCH_WEBHOOK": "https://cloud.activepieces.com/api/v1/webhooks/a",
+    "ACTIVEPIECES_RESUME_MATCH_WEBHOOK": "https://cloud.activepieces.com/api/v1/webhooks/b",
+}
+
+
+def test_backend_stays_in_mock_mode_without_secrets():
+    assert _backend_flags({}) == ("mock", ["--env", "CAREERPILOT_MOCK=1"])
+
+
+def test_backend_stays_in_mock_mode_when_one_secret_is_missing():
+    env = dict(LIVE_SECRETS)
+    del env["ACTIVEPIECES_RESUME_MATCH_WEBHOOK"]
+    mode, flags = _backend_flags(env)
+    assert mode == "mock"
+    assert flags[-2:] == ["--env", "CAREERPILOT_MOCK=1"]
+
+
+def test_backend_goes_live_with_all_three_secrets_kept_intact():
+    mode, flags = _backend_flags({**LIVE_SECRETS, "MONGO_DB": "careers"})
+    assert mode == "live"
+    assert flags == [
+        "--env", "MONGO_URI=" + LIVE_SECRETS["MONGO_URI"],
+        "--env", "ACTIVEPIECES_JOB_SEARCH_WEBHOOK=" + LIVE_SECRETS["ACTIVEPIECES_JOB_SEARCH_WEBHOOK"],
+        "--env", "ACTIVEPIECES_RESUME_MATCH_WEBHOOK=" + LIVE_SECRETS["ACTIVEPIECES_RESUME_MATCH_WEBHOOK"],
+        "--env", "MONGO_DB=careers",
+        "--env", "CAREERPILOT_MOCK=0",
+    ]
+
+
+def test_deploy_passes_the_backend_secrets_through_the_shared_flags():
+    workflow = (ROOT / ".github" / "workflows" / "deploy.yml").read_text(encoding="utf-8")
+    assert workflow.count("source .github/scripts/backend_flags.sh") == 2
+    assert "CAREERPILOT_MOCK=1" not in workflow
+    for name in LIVE_SECRETS:
+        assert f"{name}: ${{{{ secrets.{name} }}}}" in workflow

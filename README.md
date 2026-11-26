@@ -88,6 +88,17 @@ The demo runs on two free Vercel projects, both published by `.github/workflows/
 
 It needs the `VERCEL_TOKEN` repository secret. The `LIVEKIT_URL`, `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` secrets are optional. Without them the room still loads, `/api/health` lists what is missing, and joining shows that message instead of failing silently.
 
+The hosted backend reads the same settings as `Project/.env.example`, passed in from repository secrets by `.github/scripts/backend_flags.sh`.
+
+| Secret | What it is |
+| --- | --- |
+| `MONGO_URI` | Connection string of the MongoDB Atlas cluster that holds the scored jobs. A free M0 cluster is enough. In Atlas, allow access from anywhere (`0.0.0.0/0`), because Vercel functions have no fixed address. |
+| `ACTIVEPIECES_JOB_SEARCH_WEBHOOK` | Webhook URL of the Activepieces flow that searches for jobs. |
+| `ACTIVEPIECES_RESUME_MATCH_WEBHOOK` | Webhook URL of the Activepieces flow that scores the resume against those jobs. |
+| `MONGO_DB`, `MONGO_COLLECTION` | Optional database and collection names, defaulting to `scrapped_jobs` and `Careerpilot`. |
+
+The backend leaves mock mode only when the first three are all saved, so a half finished setup keeps showing the sample jobs instead of a broken page.
+
 `GET /health` (or `/api/health` on the hosted demo) reports whether the backend is in mock or live mode, which of MongoDB and the two Activepieces webhooks are configured, and `missing`, the variables live mode still needs. It only answers yes or no for each service and never shows a connection string or webhook address. MongoDB counts as configured once `MONGO_URI` points somewhere other than the local default. The live check fails when `ready` is false.
 
 **LLM keys and free tier limits**
