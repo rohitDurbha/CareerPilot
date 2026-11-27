@@ -1,2 +1,5 @@
-livekit-agents[deepgram,silero]~=1.2
+# Groq covers speech to text, the interviewer's replies and its voice.
+livekit-agents[groq,silero]>=1.9,<2
 python-dotenv
+# The transcriber agent still uses Deepgram until it moves to Groq as well.
+livekit-plugins-deepgram>=1.9,<2
