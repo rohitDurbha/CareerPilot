@@ -92,4 +92,4 @@ window.CAREERPILOT_DEMO_RESPONSES = {"GET /":{"status":200,"body":"Backend is ru
   }
 })(typeof window !== 'undefined' ? window : null);
 
-// Built from f646d96813771eea4f59894a46ca01bdb81adce7
+// Built from 8782b04edfa9d83fac5b1348d307136ef8818b6a
