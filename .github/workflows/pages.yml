@@ -1,7 +1,8 @@
 name: Pages demo
 
 # Publishes a static copy of the CareerPilot demo to GitHub Pages on every push
-# to main. It needs no repository secret, only the built-in GITHUB_TOKEN.
+# to main. It needs no repository secret, only the built-in GITHUB_TOKEN, which
+# commits the built pages to the gh-pages branch that GitHub Pages serves.
 #
 # GitHub Pages serves files only, so the build records the mock backend's
 # answers with scripts/record_demo_api.py and the pages replay them in the
@@ -18,19 +19,20 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: false
 
+env:
+  PAGES_URL: https://rohitdurbha.github.io/CareerPilot
+
 jobs:
-  build:
-    name: Test and build the static demo
+  pages:
+    name: Test, build and publish the static demo
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -50,37 +52,25 @@ jobs:
       - name: Build the static pages
         env:
           CAREERPILOT_DEMO_RESPONSES: ${{ runner.temp }}/demo-api.json
-        run: node scripts/build-site.mjs pages-site
-      - name: Turn on GitHub Pages
-        id: configure
-        continue-on-error: true
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Explain how to turn on GitHub Pages
-        if: steps.configure.outcome == 'failure'
         run: |
-          echo "::error::GitHub Pages is off for this repository. In Settings, Pages, set Source to GitHub Actions, then run this workflow again."
-          exit 1
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: pages-site
-
-  deploy:
-    name: Publish to GitHub Pages
-    needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Publish
-        id: deployment
-        uses: actions/deploy-pages@v4
+          node scripts/build-site.mjs "$RUNNER_TEMP/pages-site"
+          # The pages are plain files, so GitHub Pages should not run Jekyll.
+          touch "$RUNNER_TEMP/pages-site/.nojekyll"
+      - name: Publish to the gh-pages branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: .github/scripts/publish_gh_pages.sh "$RUNNER_TEMP/pages-site"
       - name: Check the live pages
         run: |
-          url="${{ steps.deployment.outputs.page_url }}"
-          echo "Static demo at $url" | tee -a "$GITHUB_STEP_SUMMARY"
-          python3 .github/scripts/live_check.py "$url" --static
+          echo "Static demo at $PAGES_URL" | tee -a "$GITHUB_STEP_SUMMARY"
+          # GitHub Pages takes a minute or two to serve a new commit.
+          for attempt in $(seq 1 30); do
+            if curl -fsS "$PAGES_URL/settings.js" | grep -q "$GITHUB_SHA"; then
+              break
+            fi
+            sleep 10
+          done
+          if ! python3 .github/scripts/live_check.py "$PAGES_URL" --static; then
+            echo "::error::$PAGES_URL is not serving the demo. If GitHub Pages is off, open Settings, Pages and choose Deploy from a branch with gh-pages and / (root), then run this workflow again."
+            exit 1
+          fi

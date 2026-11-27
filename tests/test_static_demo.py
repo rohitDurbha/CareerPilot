@@ -172,5 +172,55 @@ def test_pages_workflow_records_builds_and_checks_without_secrets():
     assert "python -m pytest -q" in workflow
     assert "scripts/record_demo_api.py" in workflow
     assert "CAREERPILOT_DEMO_RESPONSES" in workflow
-    assert "actions/deploy-pages" in workflow
+    assert "publish_gh_pages.sh" in workflow
+    assert "contents: write" in workflow
     assert "live_check.py" in workflow and "--static" in workflow
+
+
+GIT = shutil.which("git")
+
+
+def _git(*args, cwd=None):
+    return subprocess.run(
+        [GIT, *args], cwd=cwd, check=True, capture_output=True, text=True
+    ).stdout.strip()
+
+
+def _publish(site, remote, sha):
+    subprocess.run(
+        ["bash", str(ROOT / ".github" / "scripts" / "publish_gh_pages.sh"), str(site)],
+        check=True,
+        capture_output=True,
+        env={
+            "PATH": "/usr/bin:/bin:/usr/local/bin",
+            "HOME": str(site.parent),
+            "GH_PAGES_REMOTE": str(remote),
+            "GITHUB_SHA": sha,
+        },
+    )
+
+
+@pytest.mark.skipif(GIT is None, reason="git is not installed")
+def test_publish_adds_one_commit_per_build_without_forcing(tmp_path):
+    remote = tmp_path / "remote.git"
+    _git("init", "--quiet", "--bare", str(remote))
+    site = tmp_path / "site"
+    site.mkdir()
+    (site / "index.html").write_text("first", encoding="utf-8")
+    (site / "settings.js").write_text("// settings", encoding="utf-8")
+    (site / "old.html").write_text("gone soon", encoding="utf-8")
+
+    _publish(site, remote, "a" * 40)
+    (site / "old.html").unlink()
+    (site / "index.html").write_text("second", encoding="utf-8")
+    _publish(site, remote, "b" * 40)
+
+    log = _git("log", "--format=%s|%an", "gh-pages", cwd=remote).splitlines()
+    assert log == [
+        "Publish the static demo built from bbbbbbb|Rohit Durbha",
+        "Publish the static demo built from aaaaaaa|Rohit Durbha",
+    ]
+    files = _git("ls-tree", "--name-only", "gh-pages", cwd=remote).splitlines()
+    assert files == ["index.html", "settings.js"]
+    assert _git("show", "gh-pages:index.html", cwd=remote) == "second"
+    assert "Built from " + "b" * 40 in _git("show", "gh-pages:settings.js", cwd=remote)

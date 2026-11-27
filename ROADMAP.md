@@ -31,7 +31,7 @@ The goal right now is a working hosted link. Items 4 to 6 get a demo online in m
     - [ ] Confirm the room loads at its live address. This waits on `VERCEL_TOKEN`, like step c, and the dispatch run on November 26, 2026 still stopped at the token check, as did the dispatch run on November 27, 2026.
   - [ ] f. Publish a static copy of the demo to GitHub Pages, which needs no repository secret, so there is a live link while `VERCEL_TOKEN` is missing.
     - [x] `scripts/record_demo_api.py` records the mock backend's answers to every call the pages make, `scripts/build-site.mjs` builds a static copy when `CAREERPILOT_DEMO_RESPONSES` names that recording, and `scripts/static-demo.js` answers the calls in the browser. The Train button opens a notice, because the live room needs LiveKit. Checked in Chromium under a `/CareerPilot/` subpath, where the search form succeeds, the dashboard lists all three sample jobs and the Train button opens the notice.
-    - [x] `.github/workflows/pages.yml` runs the backend tests, builds the copy, publishes it to GitHub Pages and runs `live_check.py --static` against the published address.
+    - [x] `.github/workflows/pages.yml` runs the backend tests, builds the copy, commits it to the `gh-pages` branch with the built-in `GITHUB_TOKEN` through `.github/scripts/publish_gh_pages.sh`, and runs `live_check.py --static` against https://rohitdurbha.github.io/CareerPilot. The first try with `actions/configure-pages` failed on November 27, 2026, because the built-in token is not allowed to switch GitHub Pages on.
     - [ ] Confirm the copy loads at its live address and put the link at the top of the README and of this roadmap.
 ### Bugs found on the live site
 
