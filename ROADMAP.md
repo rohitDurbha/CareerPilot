@@ -28,7 +28,11 @@ The goal right now is a working hosted link. Items 4 to 6 get a demo online in m
   - [ ] e. Host the interview room from `meet` so the dashboard's mock interview button stops pointing at `localhost:3000`, and pass its address to the build as `CAREERPILOT_MEET_URL`.
     - [x] The deploy workflow typechecks and tests `meet`, publishes it to a second Vercel project `careerpilot-meet` with `NEXT_PUBLIC_CAREERPILOT_API_URL` set to the hosted backend, then republishes the pages with `CAREERPILOT_MEET_URL` and `CAREERPILOT_ALLOWED_ORIGINS` set to the room, and the live check now covers the room too. `meet/vercel.json` pins the Next.js build to npm.
     - [x] The room has `/api/health`, which names missing LiveKit settings without their values, and joining a room without LiveKit keys now shows the reason instead of crashing on an undefined server address.
-    - [ ] Confirm the room loads at its live address. This waits on `VERCEL_TOKEN`, like step c, and the dispatch run on November 26, 2026 still stopped at the token check.
+    - [ ] Confirm the room loads at its live address. This waits on `VERCEL_TOKEN`, like step c, and the dispatch run on November 26, 2026 still stopped at the token check, as did the dispatch run on November 27, 2026.
+  - [ ] f. Publish a static copy of the demo to GitHub Pages, which needs no repository secret, so there is a live link while `VERCEL_TOKEN` is missing.
+    - [x] `scripts/record_demo_api.py` records the mock backend's answers to every call the pages make, `scripts/build-site.mjs` builds a static copy when `CAREERPILOT_DEMO_RESPONSES` names that recording, and `scripts/static-demo.js` answers the calls in the browser. The Train button opens a notice, because the live room needs LiveKit. Checked in Chromium under a `/CareerPilot/` subpath, where the search form succeeds, the dashboard lists all three sample jobs and the Train button opens the notice.
+    - [x] `.github/workflows/pages.yml` runs the backend tests, builds the copy, publishes it to GitHub Pages and runs `live_check.py --static` against the published address.
+    - [ ] Confirm the copy loads at its live address and put the link at the top of the README and of this roadmap.
 ### Bugs found on the live site
 
 Every session opens the live link first, adds anything broken here, and fixes these before the numbered items.

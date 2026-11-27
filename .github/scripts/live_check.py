@@ -6,6 +6,11 @@ for example
     python .github/scripts/live_check.py https://careerpilot-demo.vercel.app \
         --meet https://careerpilot-meet.vercel.app
 
+For the static GitHub Pages demo, which answers backend calls from recordings
+in settings.js, add --static instead
+
+    python .github/scripts/live_check.py https://rohitdurbha.github.io/CareerPilot --static
+
 Every request is read only, so it is safe to run at any time. The script prints
 one line per check, retries a few times while a fresh deploy warms up, and
 exits with status 1 when any check still fails.
@@ -70,9 +75,26 @@ MEET_CHECKS = [
 ]
 
 
-def plan(site, meet=None):
+STATIC_CHECKS = [
+    ("search page", "/", lambda s, b: s == 200 and "settings.js" in b),
+    ("dashboard page", "/dashboard.html", lambda s, b: s == 200 and "latest_jobs" in b),
+    (
+        "recorded backend",
+        "/settings.js",
+        lambda s, b: s == 200
+        and '"apiUrl":"demo-api"' in b
+        and '"GET /latest_jobs"' in b
+        and "createDemoFetch" in b,
+    ),
+    ("room notice", "/rooms/test-room/", lambda s, b: s == 200 and "interview room" in b),
+]
+
+
+def plan(site, meet=None, static=False):
     """List (name, url, check) for the site and, when given, the interview room."""
     site = site.rstrip("/")
+    if static:
+        return [(name, site + path, passes) for name, path, passes in STATIC_CHECKS]
     checks = [(name, site + path, passes) for name, path, passes in CHECKS]
     if meet:
         meet = meet.rstrip("/")
@@ -83,9 +105,9 @@ def plan(site, meet=None):
     return checks
 
 
-def run(site, meet=None, attempts=5, pause=10, fetch=fetch):
+def run(site, meet=None, attempts=5, pause=10, fetch=fetch, static=False):
     failed = []
-    for name, url, passes in plan(site, meet):
+    for name, url, passes in plan(site, meet, static):
         for attempt in range(1, attempts + 1):
             status, body = fetch(url)
             if passes(status, body):
@@ -102,9 +124,13 @@ def run(site, meet=None, attempts=5, pause=10, fetch=fetch):
 if __name__ == "__main__":
     args = sys.argv[1:]
     meet = None
+    static = "--static" in args
+    args = [arg for arg in args if arg != "--static"]
     if len(args) == 3 and args[1] == "--meet":
         meet = args[2]
         args = args[:1]
     if len(args) != 1:
-        sys.exit("usage: live_check.py https://site.example [--meet https://room.example]")
-    sys.exit(1 if run(args[0], meet) else 0)
+        sys.exit(
+            "usage: live_check.py https://site.example [--meet https://room.example | --static]"
+        )
+    sys.exit(1 if run(args[0], meet, static=static) else 0)
